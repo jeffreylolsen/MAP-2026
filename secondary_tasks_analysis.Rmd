@@ -16,13 +16,19 @@ library(dplyr)
 
 ## `ST_*` alignment
 
-```{r Get ST columns}
-output <- read_excel("./data/output_IIHS_withDMS.xls")
-output <- output %>% rename("ST_Right_N" = "ST_Rights_N")
-output <- output %>% select(matches("ST_(Right|Left).*") | "DaqName")
-output$DaqName <- output$DaqName %>% str_sub(0, -5)
-```
-
 ```{r Read in DMS data}
 non_aug <- read.csv("./data/non_aug_data.csv")
+```
+
+```{r Get ST columns}
+# Filter out rows showing button held
+non_aug <- non_aug %>% filter(!((Left_Button_Press == lag(Left_Button_Press)) & (Left_Button_Press == 1)) | (Left_Button_Press != 2))
+
+output <- read_excel("./data/output_IIHS_withDMS.xls")
+output <- output %>% rename("ST_Right_N" = "ST_Rights_N")
+output <- output %>% select(matches("ST_(Right|Left).*") | "DaqName") %>% drop_na()
+output$DaqName <- output$DaqName %>% str_sub(0, -5)
+
+# Add counted hits from data set
+output <- merge(output, rename(aggregate(Left_Button_Press ~ DaqName, data = non_aug, FUN = sum, na.rm = TRUE), "Counted_Left_Button_Press" = "Left_Button_Press"), by = "DaqName", all = TRUE)
 ```
