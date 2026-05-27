@@ -9,6 +9,20 @@ date: "`r Sys.Date()`"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(tidyverse)
+library(dplyr)
 ```
 
 ## `ST_*` alignment
+
+```{r Get ST columns}
+output <- read_excel("./data/output_IIHS_withDMS.xls")
+output <- output %>% rename("ST_Right_N" = "ST_Rights_N")
+output <- output %>% select(matches("ST_(Right|Left).*") | "DaqName")
+output$DaqName <- output$DaqName %>% str_sub(0, -5)
+```
+
+```{r Read in DMS data}
+non_aug <- read.csv("./data/non_aug_data.csv")
+```
