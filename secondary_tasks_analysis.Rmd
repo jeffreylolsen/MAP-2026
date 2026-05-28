@@ -58,10 +58,10 @@ right_button_press_indices <- filter(non_aug, Right_Button_Press == 1)$X + 1
 ```
 
 ```{r Plot high counts to debug, fig.show="hold", out.width = "50%"}
-tmp <- non_aug %>% filter(DaqName == "NADS_IMPAIR_3A_20231003130651")
-ggplot(data = tmp, aes(x = X, y = Left_Button_Press)) + geom_line()
-tmp <- non_aug %>% filter(DaqName == "NADS_IMPAIR_3B_RS2_20231003082622")
-ggplot(data = tmp, aes(x = X, y = Left_Button_Press)) + geom_line()
+top_ten_left_press_runs <- (output %>% arrange(desc(Counted_Left_Button_Press)) %>% head(10))$DaqName
+for (run in top_ten_left_press_runs) {
+  ggplot(data = filter(non_aug, DaqName == run), aes(x = X, y = Left_Button_Press)) + geom_line()
+}
 ```
 
 
