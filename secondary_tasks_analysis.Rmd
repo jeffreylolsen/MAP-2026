@@ -67,9 +67,46 @@ for (run in top_ten_left_press_runs) {
 }
 ```
 
+```{r Aggregate Matrix}
+# 60 fps * 3 seconds =  180 Frames per window
+time_frame <- 180
 
+# Cleaned button press frames
+press_events <- non_aug %>%
+  filter(Left_Button_Press == 1 | Right_Button_Press == 1) %>%
+  select(Subject, Drive, X, Left_Button_Press, Right_Button_Press)
 
+# Window of frames around each press
+task_windows <- press_events %>%
+  rowwise() %>%
+  reframe(
+    Subject = Subject,
+    Drive = Drive,
+    Press_Frame = X,
+    Button = ifelse(Left_Button_Press == 1, "Left", "Right"),
+    Frame = c((X - time_frame):(X - 1),
+             (X + 1):(X + time_frame)),
+    Phase =  c(rep("Pre_Press", time_frame),
+               rep("Post_Press", time_frame))
+  )
 
+task_windows <- task_windows %>%
+  inner_join(non_aug, by = c("Subject", "Drive", "Frame" = "X"))
+
+#Aggregate into one row per window
+task_matrix <- task_windows %>%
+  group_by(Subject, Drive, Press_Frame, Button, Phase) %>%
+  summarise(
+    LPupil_Diameter_mean = mean(LPupil_Diameter, na.rm = TRUE),
+    RPupil_Diameter_mean = mean(RPupil_Diameter, na.rm = TRUE),
+    Gaze_Pitch_mean = mean(Gaze_Pitch, na.rm = TRUE),
+    Gaze_Yaw_mean = mean(Gaze_Yaw, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+write.csv(task_matrix, "./data/task_matrix.csv", row.names = FALSE)
+
+```
 
 
 
