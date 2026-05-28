@@ -58,9 +58,12 @@ right_button_press_indices <- filter(non_aug, Right_Button_Press == 1)$X + 1
 ```
 
 ```{r Plot high counts to debug, fig.show="hold", out.width = "50%"}
-top_ten_left_press_runs <- (output %>% arrange(desc(Counted_Left_Button_Press)) %>% head(10))$DaqName
+top_ten_left_press_runs <- head(arrange(output, desc(Counted_Left_Button_Press)), 10)$DaqName
 for (run in top_ten_left_press_runs) {
-  ggplot(data = filter(non_aug, DaqName == run), aes(x = X, y = Left_Button_Press)) + geom_line()
+  plot <- ggplot(data = filter(non_aug, DaqName == run),
+                 aes(x = seq(1, length(Left_Button_Press)),
+                     y = Left_Button_Press)) + geom_line()
+  print(plot)
 }
 ```
 
