@@ -21,10 +21,10 @@ non_aug <- read.csv("./data/non_aug_data.csv")
 ```
 
 ```{r Get ST columns}
-# Filter out rows showing button held
-non_aug <- non_aug %>% filter(!((Left_Button_Press == lag(Left_Button_Press))
+# Filter out "1" rows with previous row also "1"
+non_aug <- non_aug %>% filter(!((Left_Button_Press == lag(Left_Button_Press)) # Get first, not last if replacing duplicates
                                 & (Left_Button_Press == 1))
-                              | (Left_Button_Press != 2))
+                              & (Left_Button_Press != 2))
 
 output <- read_excel("./data/output_IIHS_withDMS.xls") %>%
   rename("ST_Right_N" = "ST_Rights_N") %>%
