@@ -17,14 +17,14 @@ library(readxl)
 ## `ST_*` alignment
 
 ```{r Read in DMS data}
-non_aug <- read.csv("./data/non_aug_data.csv")
+non_aug <- read.csv("./data/non_aug_data.csv") %>%
+  # Filter out "1" rows with previous row also "1"
+  filter(!((Left_Button_Press == lag(Left_Button_Press)) 
+           & (Left_Button_Press == 1))
+         & (Left_Button_Press != 2))
 ```
 
 ```{r Get ST columns}
-# Filter out "1" rows with previous row also "1"
-non_aug <- non_aug %>% filter(!((Left_Button_Press == lag(Left_Button_Press)) # Get first, not last if replacing duplicates
-                                & (Left_Button_Press == 1))
-                              & (Left_Button_Press != 2))
 
 output <- read_excel("./data/output_IIHS_withDMS.xls") %>%
   rename("ST_Right_N" = "ST_Rights_N") %>%
@@ -56,3 +56,22 @@ output <- merge(output,
 left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X + 1
 right_button_press_indices <- filter(non_aug, Right_Button_Press == 1)$X + 1
 ```
+
+```{r Plot high counts to debug, fig.show="hold", out.width = "50%"}
+tmp <- non_aug %>% filter(DaqName == "NADS_IMPAIR_3A_20231003130651")
+ggplot(data = tmp, aes(x = X, y = Left_Button_Press)) + geom_line()
+tmp <- non_aug %>% filter(DaqName == "NADS_IMPAIR_3B_RS2_20231003082622")
+ggplot(data = tmp, aes(x = X, y = Left_Button_Press)) + geom_line()
+```
+
+
+
+
+
+
+
+
+
+
+
+
