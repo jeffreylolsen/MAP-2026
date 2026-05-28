@@ -22,7 +22,9 @@ non_aug <- read.csv("./data/non_aug_data.csv")
 
 ```{r Get ST columns}
 # Filter out rows showing button held
-non_aug <- non_aug %>% filter(!((Left_Button_Press == lag(Left_Button_Press)) & (Left_Button_Press == 1)) | (Left_Button_Press != 2))
+non_aug <- non_aug %>% filter(!((Left_Button_Press == lag(Left_Button_Press))
+                                & (Left_Button_Press == 1))
+                              | (Left_Button_Press != 2))
 
 output <- read_excel("./data/output_IIHS_withDMS.xls") %>%
   rename("ST_Right_N" = "ST_Rights_N") %>%
