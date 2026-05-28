@@ -28,27 +28,28 @@ non_aug <- read.csv("./data/non_aug_data.csv") %>%
 
 output <- read_excel("./data/output_IIHS_withDMS.xls") %>%
   rename("ST_Right_N" = "ST_Rights_N") %>%
-  select(matches("ST_(Right|Left).*") | "DaqName") %>%
+  select(matches("ST_(Right|Left).*"), DaqName, Subject, Drive) %>%
+  relocate(DaqName, .after = Drive) %>%
   drop_na()
 
 output$DaqName <- output$DaqName %>% str_sub(0, -5)
 
 # Add counted hits from data set
 output <- merge(output,
-                rename(aggregate(Left_Button_Press ~ DaqName,
+                rename(aggregate(Left_Button_Press ~ Subject + Drive,
                                  data = non_aug,
                                  FUN = sum,
                                  na.rm = TRUE),
                        "Counted_Left_Button_Press" = "Left_Button_Press"),
-                by = "DaqName",
+                by = c("Subject", "Drive"),
                 all = TRUE)
 output <- merge(output,
-                rename(aggregate(Right_Button_Press ~ DaqName,
+                rename(aggregate(Right_Button_Press ~ Subject + Drive,
                                  data = non_aug,
                                  FUN = sum,
                                  na.rm = TRUE),
                        "Counted_Right_Button_Press" = "Right_Button_Press"),
-                by = "DaqName",
+                by = c("Subject", "Drive"),
                 all = TRUE)
 ```
 
