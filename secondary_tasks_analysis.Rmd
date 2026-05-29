@@ -126,6 +126,14 @@ task_matrix <- task_windows %>%
 
 write.csv(task_matrix, "./data/task_matrix.csv", row.names = FALSE)
 
+# Make wide-form version for paired differences
+wideform_task_matrix <- task_matrix %>% pivot_wider(names_from = Phase,
+                                                    values_from = tail(colnames(task_matrix), -5))
+wideform_task_matrix$RPupil_Diameter_mean_diff <- wideform_task_matrix$RPupil_Diameter_mean_Post_Press - wideform_task_matrix$RPupil_Diameter_mean_Pre_Press
+wideform_task_matrix$LPupil_Diameter_mean_diff <- wideform_task_matrix$LPupil_Diameter_mean_Post_Press - wideform_task_matrix$LPupil_Diameter_mean_Pre_Press
+wideform_task_matrix$Gaze_Yaw_mean_diff <- wideform_task_matrix$Gaze_Yaw_mean_Post_Press - wideform_task_matrix$Gaze_Yaw_mean_Pre_Press
+wideform_task_matrix$Gaze_Pitch_mean_diff <- wideform_task_matrix$Gaze_Pitch_mean_Post_Press - wideform_task_matrix$Gaze_Pitch_mean_Pre_Press
+
 ```
 
 
