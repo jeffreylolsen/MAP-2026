@@ -18,8 +18,10 @@ library(readxl)
 
 ```{r Read in DMS data}
 non_aug <- read.csv("./data/non_aug_data.csv") %>%
-  # Filter out "1" rows with previous row also "1"
-  filter(!((Left_Button_Press == lag(Left_Button_Press)) 
+
+# Filter out "1" rows with previous row also "1"
+filtered_non_aug <- non_aug %>% 
+  filter(!((Left_Button_Press == lag(Left_Button_Press))
            & (Left_Button_Press == 1))
          & (Left_Button_Press != 2))
 ```
@@ -37,7 +39,7 @@ output$DaqName <- output$DaqName %>% str_sub(0, -5)
 # Add counted hits from data set
 output <- merge(output,
                 rename(aggregate(Left_Button_Press ~ Subject + Drive,
-                                 data = non_aug,
+                                 data = filtered_non_aug,
                                  FUN = sum,
                                  na.rm = TRUE),
                        "Counted_Left_Button_Press" = "Left_Button_Press"),
@@ -45,7 +47,7 @@ output <- merge(output,
                 all = TRUE)
 output <- merge(output,
                 rename(aggregate(Right_Button_Press ~ Subject + Drive,
-                                 data = non_aug,
+                                 data = filtered_non_aug,
                                  FUN = sum,
                                  na.rm = TRUE),
                        "Counted_Right_Button_Press" = "Right_Button_Press"),
@@ -54,14 +56,14 @@ output <- merge(output,
 ```
 
 ```{r Locate button presses}
-left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X + 1
-right_button_press_indices <- filter(non_aug, Right_Button_Press == 1)$X + 1
+left_button_press_indices <- filter(filtered_non_aug, Left_Button_Press == 1)$X + 1
+right_button_press_indices <- filter(filtered_non_aug, Right_Button_Press == 1)$X + 1
 ```
 
 ```{r Plot high counts to debug, fig.show="hold", out.width = "50%"}
 top_ten_left_press_runs <- head(arrange(output, desc(Counted_Left_Button_Press)), 10)$DaqName
 for (run in top_ten_left_press_runs) {
-  plot <- ggplot(data = filter(non_aug, DaqName == run),
+  plot <- ggplot(data = filter(filtered_non_aug, DaqName == run),
                  aes(x = seq(1, length(Left_Button_Press)),
                      y = Left_Button_Press)) + geom_line()
   print(plot)
@@ -73,12 +75,12 @@ for (run in top_ten_left_press_runs) {
 time_frame <- 180
 
 # Get first frame of each Daq
-daq_first_frame <- non_aug %>%
+daq_first_frame <- filtered_non_aug %>%
   group_by(DaqName) %>%
   summarize(first_x = min(X), .groups = "drop")
 
 # Cleaned button press frames
-press_events <- non_aug %>%
+press_events <- filtered_non_aug %>%
   filter(Left_Button_Press == 1 | Right_Button_Press == 1) %>%
   select(DaqName, Subject, Drive, X, Left_Button_Press, Right_Button_Press)
 
@@ -98,7 +100,7 @@ task_windows <- press_events %>%
   )
 
 task_windows <- task_windows %>%
-  inner_join(non_aug, by = c("Subject", "Drive", "Frame" = "X"))
+  inner_join(filtered_non_aug, by = c("Subject", "Drive", "Frame" = "X"))
 
 #Aggregate into one row per window
 task_matrix <- task_windows %>%
