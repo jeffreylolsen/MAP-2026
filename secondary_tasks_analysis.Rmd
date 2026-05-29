@@ -17,13 +17,18 @@ library(readxl)
 ## `ST_*` alignment
 
 ```{r Read in DMS data}
-non_aug <- read.csv("./data/non_aug_data.csv") %>%
+if (!exists("non_aug")) {
+  non_aug <- read.csv("./data/non_aug_data.csv")
+}
 
 # Filter out "1" rows with previous row also "1"
-filtered_non_aug <- non_aug %>% 
+filtered_non_aug <- non_aug %>%
   filter(!((Left_Button_Press == lag(Left_Button_Press))
            & (Left_Button_Press == 1))
-         & (Left_Button_Press != 2))
+         & (Left_Button_Press != 2)) %>% 
+  filter(!((Right_Button_Press == lag(Right_Button_Press))
+           & (Right_Button_Press == 1))
+         & (Right_Button_Press != 2))
 ```
 
 ```{r Get ST columns}
@@ -65,7 +70,9 @@ top_ten_left_press_runs <- head(arrange(output, desc(Counted_Left_Button_Press))
 for (run in top_ten_left_press_runs) {
   plot <- ggplot(data = filter(filtered_non_aug, DaqName == run),
                  aes(x = seq(1, length(Left_Button_Press)),
-                     y = Left_Button_Press)) + geom_line()
+                     y = Left_Button_Press)) + geom_point() + labs(title = run,
+                                                                  x = "Frame",
+                                                                  y = "Button press")
   print(plot)
 }
 ```
