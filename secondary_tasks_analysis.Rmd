@@ -21,14 +21,16 @@ if (!exists("non_aug")) {
   non_aug <- read.csv("./data/non_aug_data.csv")
 }
 
-# Filter out "1" rows with previous row also "1"
+# Replace repeated button-press observations with zeros
 filtered_non_aug <- non_aug %>%
-  filter(!((Left_Button_Press == lag(Left_Button_Press))
-           & (Left_Button_Press == 1))
-         & (Left_Button_Press != 2)) %>% 
-  filter(!((Right_Button_Press == lag(Right_Button_Press))
-           & (Right_Button_Press == 1))
-         & (Right_Button_Press != 2))
+  mutate(Left_Button_Press = case_when((Left_Button_Press == lag(Left_Button_Press))
+                                       & (Left_Button_Press == 1)
+                                       | (Left_Button_Press == 2) ~ 0,
+                                       TRUE ~ Left_Button_Press)) %>%
+  mutate(Right_Button_Press = case_when((Right_Button_Press == lag(Right_Button_Press))
+                                        & (Right_Button_Press == 1)
+                                        | (Right_Button_Press == 2) ~ 0,
+                                        TRUE ~ Right_Button_Press))
 ```
 
 ```{r Get ST columns}
@@ -78,6 +80,8 @@ for (run in top_ten_left_press_runs) {
 ```
 
 ```{r Aggregate Matrix}
+# Long-form wrt pre/post pairs
+
 # 60 fps * 3 seconds =  180 Frames per window
 time_frame <- 180
 
