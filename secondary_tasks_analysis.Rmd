@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(dplyr)
 library(readxl)
+library(lme4)
 ```
 
 ## `ST_*` alignment
@@ -137,6 +138,18 @@ wideform_task_matrix$RPupil_Diameter_mean_diff <- wideform_task_matrix$RPupil_Di
 wideform_task_matrix$LPupil_Diameter_mean_diff <- wideform_task_matrix$LPupil_Diameter_mean_Post_Press - wideform_task_matrix$LPupil_Diameter_mean_Pre_Press
 wideform_task_matrix$Gaze_Yaw_mean_diff <- wideform_task_matrix$Gaze_Yaw_mean_Post_Press - wideform_task_matrix$Gaze_Yaw_mean_Pre_Press
 wideform_task_matrix$Gaze_Pitch_mean_diff <- wideform_task_matrix$Gaze_Pitch_mean_Post_Press - wideform_task_matrix$Gaze_Pitch_mean_Pre_Press
+
+
+# Combine the eye measurements to compare overall "pupil change" per button press
+model_data <- wideform_task_matrix %>%
+  mutate(Pupil_Diff_Avg = (RPupil_Diameter_mean_diff + LPupil_Diameter_mean_diff) / 2)
+
+# Fixed Effect = Button (Left vs Right)
+# Random effect 
+
+model_combined <- lmer(Pupil_Diff_Avg ~ factor(Drive) + (1| Subject), data = model_data)
+summary(model_combined)
+
 
 ```
 
