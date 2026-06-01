@@ -67,6 +67,10 @@ left_button_press_indices <- filter(filtered_non_aug, Left_Button_Press == 1)$X 
 right_button_press_indices <- filter(filtered_non_aug, Right_Button_Press == 1)$X + 1
 ```
 
+```{r Add and modify predictors}
+non_aug$Blinking <- non_aug$LPupil_Diameter == 0 & non_aug$RPupil_Diameter == 0
+```
+
 ```{r Plot high counts to debug, fig.show="hold", out.width = "50%"}
 top_ten_left_press_runs <- head(arrange(output, desc(Counted_Left_Button_Press)), 10)$DaqName
 for (run in top_ten_left_press_runs) {
