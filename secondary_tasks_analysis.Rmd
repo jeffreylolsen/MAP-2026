@@ -19,10 +19,12 @@ library(lme4)
 ## `ST_*` alignment
 
 ```{r Read in DMS data}
-
 # Function to clear environment
 clear_env <- function() {
-  rm(list = ls(envir = .GlobalEnv)[ls(envir = .GlobalEnv) != 'non_aug_raw'], envir = .GlobalEnv)
+  rm(
+    list = ls(envir = .GlobalEnv)[ls(envir = .GlobalEnv) != "non_aug_raw"],
+    envir = .GlobalEnv
+  )
   gc()
 }
 
@@ -33,14 +35,18 @@ if (!exists("non_aug_raw")) {
 
 # Replace repeated button-press observations with zeros
 non_aug <- non_aug_raw %>%
-  mutate(Left_Button_Press = case_when((Left_Button_Press == lag(Left_Button_Press))
-                                       & (Left_Button_Press == 1)
-                                       | (Left_Button_Press == 2) ~ 0,
-                                       TRUE ~ Left_Button_Press)) %>%
-  mutate(Right_Button_Press = case_when((Right_Button_Press == lag(Right_Button_Press))
-                                        & (Right_Button_Press == 1)
-                                        | (Right_Button_Press == 2) ~ 0,
-                                        TRUE ~ Right_Button_Press))
+  mutate(Left_Button_Press = case_when(
+    (Left_Button_Press == lag(Left_Button_Press)) &
+      (Left_Button_Press == 1) |
+      (Left_Button_Press == 2) ~ 0,
+    TRUE ~ Left_Button_Press
+  )) %>%
+  mutate(Right_Button_Press = case_when(
+    (Right_Button_Press == lag(Right_Button_Press)) &
+      (Right_Button_Press == 1) |
+      (Right_Button_Press == 2) ~ 0,
+    TRUE ~ Right_Button_Press
+  ))
 # Replace coded 99 values from python script with NA values
 non_aug[non_aug == 99] <- NA
 
@@ -49,7 +55,6 @@ non_aug$X <- 1:nrow(non_aug)
 ```
 
 ```{r Get ST columns}
-
 output <- read_excel("./data/output_IIHS_withDMS.xls") %>%
   rename("ST_Right_N" = "ST_Rights_N") %>%
   select(matches("ST_(Right|Left).*"), DaqName, Subject, Drive) %>%
@@ -60,21 +65,29 @@ output$DaqName <- output$DaqName %>% str_sub(0, -5)
 
 # Add counted hits from data set
 output <- merge(output,
-                rename(aggregate(Left_Button_Press ~ Subject + Drive,
-                                 data = non_aug,
-                                 FUN = sum,
-                                 na.rm = TRUE),
-                       "Counted_Left_Button_Press" = "Left_Button_Press"),
-                by = c("Subject", "Drive"),
-                all = TRUE)
+  rename(
+    aggregate(Left_Button_Press ~ Subject + Drive,
+      data = non_aug,
+      FUN = sum,
+      na.rm = TRUE
+    ),
+    "Counted_Left_Button_Press" = "Left_Button_Press"
+  ),
+  by = c("Subject", "Drive"),
+  all = TRUE
+)
 output <- merge(output,
-                rename(aggregate(Right_Button_Press ~ Subject + Drive,
-                                 data = non_aug,
-                                 FUN = sum,
-                                 na.rm = TRUE),
-                       "Counted_Right_Button_Press" = "Right_Button_Press"),
-                by = c("Subject", "Drive"),
-                all = TRUE)
+  rename(
+    aggregate(Right_Button_Press ~ Subject + Drive,
+      data = non_aug,
+      FUN = sum,
+      na.rm = TRUE
+    ),
+    "Counted_Right_Button_Press" = "Right_Button_Press"
+  ),
+  by = c("Subject", "Drive"),
+  all = TRUE
+)
 ```
 
 ```{r Locate button presses}
@@ -87,33 +100,47 @@ non_aug$Blinking <- non_aug$LPupil_Diameter == 0 & non_aug$RPupil_Diameter == 0
 
 # Get saccades, fixations, and blinks
 saccade_sens <- 15 # Detection threshold parameter for `saccades` event detection
-non_saccades <- detect.fixations(non_aug %>%
-                                   select(DaqName,
-                                          Gaze_Yaw,
-                                          Gaze_Pitch,
-                                          X) %>%
-                                   rename(trial = DaqName,
-                                          x = Gaze_Yaw,
-                                          y = Gaze_Pitch,
-                                          time = X),
-                                 lambda = saccade_sens)
+non_saccades <- detect.fixations(
+  non_aug %>%
+    select(
+      DaqName,
+      Gaze_Yaw,
+      Gaze_Pitch,
+      X
+    ) %>%
+    rename(
+      trial = DaqName,
+      x = Gaze_Yaw,
+      y = Gaze_Pitch,
+      time = X
+    ),
+  lambda = saccade_sens
+)
 
 # Add column to `non_aug` for eye event type
-non_aug$Eye_Event <- 'saccade'
+non_aug$Eye_Event <- "saccade"
 indices <- mapply(seq, non_saccades$start, non_saccades$end)
 flattened_indices <- unlist(indices)
 non_aug$Eye_Event[flattened_indices] <- rep(as.character(non_saccades$event), times = lengths(indices))
-non_aug[is.na(non_aug$Eye_Event), 'Eye_Event'] <- 'saccade'
+non_aug[is.na(non_aug$Eye_Event), "Eye_Event"] <- "saccade"
 ```
 
 ```{r Plot high counts to debug, fig.show="hold", out.width = "50%"}
 top_ten_left_press_runs <- head(arrange(output, desc(Counted_Left_Button_Press)), 10)$DaqName
 for (run in top_ten_left_press_runs) {
-  plot <- ggplot(data = filter(non_aug, DaqName == run),
-                 aes(x = seq(1, length(Left_Button_Press)),
-                     y = Left_Button_Press)) + geom_point() + labs(title = run,
-                                                                  x = "Frame",
-                                                                  y = "Button press")
+  plot <- ggplot(
+    data = filter(non_aug, DaqName == run),
+    aes(
+      x = seq(1, length(Left_Button_Press)),
+      y = Left_Button_Press
+    )
+  ) +
+    geom_point() +
+    labs(
+      title = run,
+      x = "Frame",
+      y = "Button press"
+    )
   print(plot)
 }
 ```
@@ -144,16 +171,20 @@ task_windows <- press_events %>%
     # Want the frame number within the run of the simulator
     Press_Frame = X + 1 - daq_first_frame$first_x[match(DaqName, daq_first_frame$DaqName)],
     Button = ifelse(Left_Button_Press == 1, "Left", "Right"),
-    Frame = c((X - time_frame):(X - 1),
-             X:(X + time_frame - 1)), # Include frame of press since press occurred before recording
-    Phase =  c(rep("Pre_Press", time_frame),
-               rep("Post_Press", time_frame))
+    Frame = c(
+      (X - time_frame):(X - 1),
+      X:(X + time_frame - 1)
+    ), # Include frame of press since press occurred before recording
+    Phase = c(
+      rep("Pre_Press", time_frame),
+      rep("Post_Press", time_frame)
+    )
   )
 
 task_windows <- task_windows %>%
   inner_join(select(non_aug, -DaqName), by = c("Subject", "Drive", "Frame" = "X"))
 
-#Aggregate into one row per window
+# Aggregate into one row per window
 task_matrix <- task_windows %>%
   group_by(DaqName, Subject, Drive, Press_Frame, Button, Phase) %>%
   summarise(
@@ -167,8 +198,10 @@ task_matrix <- task_windows %>%
 write.csv(task_matrix, "./data/task_matrix.csv", row.names = FALSE)
 
 # Make wide-form version for paired differences
-wideform_task_matrix <- task_matrix %>% pivot_wider(names_from = Phase,
-                                                    values_from = tail(colnames(task_matrix), -5))
+wideform_task_matrix <- task_matrix %>% pivot_wider(
+  names_from = Phase,
+  values_from = tail(colnames(task_matrix), -5)
+)
 wideform_task_matrix$RPupil_Diameter_mean_diff <- wideform_task_matrix$RPupil_Diameter_mean_Post_Press - wideform_task_matrix$RPupil_Diameter_mean_Pre_Press
 wideform_task_matrix$LPupil_Diameter_mean_diff <- wideform_task_matrix$LPupil_Diameter_mean_Post_Press - wideform_task_matrix$LPupil_Diameter_mean_Pre_Press
 wideform_task_matrix$Gaze_Yaw_mean_diff <- wideform_task_matrix$Gaze_Yaw_mean_Post_Press - wideform_task_matrix$Gaze_Yaw_mean_Pre_Press
@@ -179,9 +212,9 @@ model_data <- wideform_task_matrix %>%
   mutate(Pupil_Diff_Avg = (RPupil_Diameter_mean_diff + LPupil_Diameter_mean_diff) / 2)
 
 # Fixed Effect = Button (Left vs Right)
-# Random effect 
+# Random effect
 
-model_combined <- lmer(Pupil_Diff_Avg ~ factor(Drive) + (1| Subject), data = model_data)
+model_combined <- lmer(Pupil_Diff_Avg ~ factor(Drive) + (1 | Subject), data = model_data)
 summary(model_combined)
 ```
 
