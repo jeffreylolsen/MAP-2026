@@ -24,7 +24,7 @@ if (!exists("non_aug")) {
 }
 
 # Replace repeated button-press observations with zeros
-filtered_non_aug <- non_aug %>%
+non_aug <- non_aug %>%
   mutate(Left_Button_Press = case_when((Left_Button_Press == lag(Left_Button_Press))
                                        & (Left_Button_Press == 1)
                                        | (Left_Button_Press == 2) ~ 0,
@@ -48,7 +48,7 @@ output$DaqName <- output$DaqName %>% str_sub(0, -5)
 # Add counted hits from data set
 output <- merge(output,
                 rename(aggregate(Left_Button_Press ~ Subject + Drive,
-                                 data = filtered_non_aug,
+                                 data = non_aug,
                                  FUN = sum,
                                  na.rm = TRUE),
                        "Counted_Left_Button_Press" = "Left_Button_Press"),
@@ -56,7 +56,7 @@ output <- merge(output,
                 all = TRUE)
 output <- merge(output,
                 rename(aggregate(Right_Button_Press ~ Subject + Drive,
-                                 data = filtered_non_aug,
+                                 data = non_aug,
                                  FUN = sum,
                                  na.rm = TRUE),
                        "Counted_Right_Button_Press" = "Right_Button_Press"),
@@ -65,8 +65,8 @@ output <- merge(output,
 ```
 
 ```{r Locate button presses}
-left_button_press_indices <- filter(filtered_non_aug, Left_Button_Press == 1)$X + 1
-right_button_press_indices <- filter(filtered_non_aug, Right_Button_Press == 1)$X + 1
+left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X + 1
+right_button_press_indices <- filter(non_aug, Right_Button_Press == 1)$X + 1
 ```
 
 ```{r Add and modify predictors}
@@ -86,7 +86,6 @@ non_saccades <- detect.fixations(non_aug %>%
 
 # Add column to `non_aug` for eye event type
 non_aug$Eye_Event <- 'saccade'
-#non_aug$Eye_Event <- as.character(non_aug$Eye_Event)
 indices <- mapply(seq, non_saccades$start, non_saccades$end)
 flattened_indices <- unlist(indices)
 non_aug$Eye_Event[flattened_indices] <- rep(as.character(non_saccades$event), times = lengths(indices))
@@ -96,7 +95,7 @@ non_aug[is.na(non_aug$Eye_Event), 'Eye_Event'] <- 'saccade'
 ```{r Plot high counts to debug, fig.show="hold", out.width = "50%"}
 top_ten_left_press_runs <- head(arrange(output, desc(Counted_Left_Button_Press)), 10)$DaqName
 for (run in top_ten_left_press_runs) {
-  plot <- ggplot(data = filter(filtered_non_aug, DaqName == run),
+  plot <- ggplot(data = filter(non_aug, DaqName == run),
                  aes(x = seq(1, length(Left_Button_Press)),
                      y = Left_Button_Press)) + geom_point() + labs(title = run,
                                                                   x = "Frame",
@@ -112,12 +111,12 @@ for (run in top_ten_left_press_runs) {
 time_frame <- 180
 
 # Get first frame of each Daq
-daq_first_frame <- filtered_non_aug %>%
+daq_first_frame <- non_aug %>%
   group_by(DaqName) %>%
   summarize(first_x = min(X), .groups = "drop")
 
 # Cleaned button press frames
-press_events <- filtered_non_aug %>%
+press_events <- non_aug %>%
   filter(Left_Button_Press == 1 | Right_Button_Press == 1) %>%
   select(DaqName, Subject, Drive, X, Left_Button_Press, Right_Button_Press)
 
@@ -137,7 +136,7 @@ task_windows <- press_events %>%
   )
 
 task_windows <- task_windows %>%
-  inner_join(filtered_non_aug, by = c("Subject", "Drive", "Frame" = "X"))
+  inner_join(non_aug, by = c("Subject", "Drive", "Frame" = "X"))
 
 #Aggregate into one row per window
 task_matrix <- task_windows %>%
