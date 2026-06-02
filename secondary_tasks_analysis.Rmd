@@ -77,10 +77,10 @@ non_aug$Blinking <- non_aug$LPupil_Diameter == 0 & non_aug$RPupil_Diameter == 0
 # Get saccades, fixations, and blinks
 saccade_sens <- 15 # Detection threshold parameter for `saccades` event detection
 non_saccades <- detect.fixations(non_aug %>%
-                                   select(Sample_ID,
+                                   select(DaqName,
                                           Gaze_Yaw,
                                           Gaze_Pitch) %>%
-                                   rename(trial = Sample_ID,
+                                   rename(trial = DaqName,
                                           x = Gaze_Yaw,
                                           y = Gaze_Pitch) %>%
                                    mutate(time = 1:nrow(non_aug)),
