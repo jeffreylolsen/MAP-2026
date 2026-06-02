@@ -33,6 +33,8 @@ non_aug <- non_aug %>%
                                         & (Right_Button_Press == 1)
                                         | (Right_Button_Press == 2) ~ 0,
                                         TRUE ~ Right_Button_Press))
+# Replace coded 99 values from python script with NA values
+non_aug[non_aug == 99] <- NA
 ```
 
 ```{r Get ST columns}
