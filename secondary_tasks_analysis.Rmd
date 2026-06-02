@@ -19,12 +19,12 @@ library(lme4)
 ## `ST_*` alignment
 
 ```{r Read in DMS data}
-if (!exists("non_aug")) {
-  non_aug <- read.csv("./data/non_aug_data.csv")
+if (!exists("non_aug_raw")) {
+  non_aug_raw <- read.csv("./data/non_aug_data.csv")
 }
 
 # Replace repeated button-press observations with zeros
-non_aug <- non_aug %>%
+non_aug <- non_aug_raw %>%
   mutate(Left_Button_Press = case_when((Left_Button_Press == lag(Left_Button_Press))
                                        & (Left_Button_Press == 1)
                                        | (Left_Button_Press == 2) ~ 0,
@@ -35,6 +35,9 @@ non_aug <- non_aug %>%
                                         TRUE ~ Right_Button_Press))
 # Replace coded 99 values from python script with NA values
 non_aug[non_aug == 99] <- NA
+
+# Use 1-base indexing for X (match row number)
+non_aug$X <- 1:nrow(non_aug)
 ```
 
 ```{r Get ST columns}
@@ -67,8 +70,8 @@ output <- merge(output,
 ```
 
 ```{r Locate button presses}
-left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X + 1
-right_button_press_indices <- filter(non_aug, Right_Button_Press == 1)$X + 1
+left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X
+right_button_press_indices <- filter(non_aug, Right_Button_Press == 1)$X
 ```
 
 ```{r Add and modify predictors}
@@ -126,23 +129,24 @@ press_events <- non_aug %>%
 task_windows <- press_events %>%
   rowwise() %>%
   reframe(
+    DaqName = DaqName,
     Subject = Subject,
     Drive = Drive,
     # Want the frame number within the run of the simulator
     Press_Frame = X + 1 - daq_first_frame$first_x[match(DaqName, daq_first_frame$DaqName)],
     Button = ifelse(Left_Button_Press == 1, "Left", "Right"),
     Frame = c((X - time_frame):(X - 1),
-             (X + 1):(X + time_frame)),
+             X:(X + time_frame - 1)), # Include frame of press since press occurred before recording
     Phase =  c(rep("Pre_Press", time_frame),
                rep("Post_Press", time_frame))
   )
 
 task_windows <- task_windows %>%
-  inner_join(non_aug, by = c("Subject", "Drive", "Frame" = "X"))
+  inner_join(select(non_aug, -DaqName), by = c("Subject", "Drive", "Frame" = "X"))
 
 #Aggregate into one row per window
 task_matrix <- task_windows %>%
-  group_by(Subject, Drive, Press_Frame, Button, Phase) %>%
+  group_by(DaqName, Subject, Drive, Press_Frame, Button, Phase) %>%
   summarise(
     LPupil_Diameter_mean = mean(LPupil_Diameter, na.rm = TRUE),
     RPupil_Diameter_mean = mean(RPupil_Diameter, na.rm = TRUE),
