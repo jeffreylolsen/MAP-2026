@@ -181,11 +181,47 @@ task_windows <- press_events %>%
     )
   )
 
-task_windows <- task_windows %>%
+# Find the boundaries of every task block per Daq run 
+task_boundaries <- task_windows %>%
+  group_by(DaqName, Subject, Drive, Press_Frame) %>%
+  summarise(
+    Task_Start_X = min(Frame),
+    Task_End_X = max(Frame),
+    .groups = "drop"
+  ) %>%
+  arrange(DaqName, Task_Start_X) %>%
+  group_by(DaqName) %>%
+  mutate(
+    Control_Start = lag(Task_End_X) + 1,
+    Control_End = Task_Start_X - 1
+  ) %>%
+  ungroup() %>%
+  filter(!is.na(Control_Start) & Control_End >= Control_Start)
+
+# Expand these boundaries into actual individual frame rows
+control_windows <- task_boundaries %>%
+  rowwise() %>%
+  reframe(
+    DaqName = DaqName,
+    Subject = Subject,
+    Drive = Drive,
+    Press_Frame = Press_Frame, # Linking it to the upcoming press
+    Button = "None",           # Baseline driving, no button active
+    Frame = Control_Start:Control_End,
+    Phase = "Control"
+  )
+
+# Combine with original Pre/Post task windows with the new control windows
+all_windows <- bind_rows(task_windows, control_windows) %>%
+  arrange(DaqName, Frame)
+
+# Pull in raw eye data for ALL windows (Tasks and Controls)
+task_windows_with_control <- all_windows %>%
   inner_join(select(non_aug, -DaqName), by = c("Subject", "Drive", "Frame" = "X"))
 
-# Aggregate into one row per window
-task_matrix <- task_windows %>%
+
+# Aggregate into one row per window with the control phases
+task_matrix <- task_windows_with_control %>%
   group_by(DaqName, Subject, Drive, Press_Frame, Button, Phase) %>%
   summarise(
     LPupil_Diameter_mean = mean(LPupil_Diameter, na.rm = TRUE),
