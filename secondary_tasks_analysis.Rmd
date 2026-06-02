@@ -197,6 +197,9 @@ task_matrix <- task_windows %>%
 
 write.csv(task_matrix, "./data/task_matrix.csv", row.names = FALSE)
 
+# Get control frames (not near tasks)
+control_frames <- setdiff(non_aug$X, task_windows$Frame)
+
 # Make wide-form version for paired differences
 wideform_task_matrix <- task_matrix %>% pivot_wider(
   names_from = Phase,
