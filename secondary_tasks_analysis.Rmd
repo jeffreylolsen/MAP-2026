@@ -19,6 +19,14 @@ library(lme4)
 ## `ST_*` alignment
 
 ```{r Read in DMS data}
+
+# Function to clear environment
+clear_env <- function() {
+  rm(list = ls(envir = .GlobalEnv)[ls(envir = .GlobalEnv) != 'non_aug_raw'], envir = .GlobalEnv)
+  gc()
+}
+
+# Load in CSV
 if (!exists("non_aug_raw")) {
   non_aug_raw <- read.csv("./data/non_aug_data.csv")
 }
@@ -82,11 +90,12 @@ saccade_sens <- 15 # Detection threshold parameter for `saccades` event detectio
 non_saccades <- detect.fixations(non_aug %>%
                                    select(DaqName,
                                           Gaze_Yaw,
-                                          Gaze_Pitch) %>%
+                                          Gaze_Pitch,
+                                          X) %>%
                                    rename(trial = DaqName,
                                           x = Gaze_Yaw,
-                                          y = Gaze_Pitch) %>%
-                                   mutate(time = 1:nrow(non_aug)),
+                                          y = Gaze_Pitch,
+                                          time = X),
                                  lambda = saccade_sens)
 
 # Add column to `non_aug` for eye event type
@@ -175,9 +184,6 @@ model_data <- wideform_task_matrix %>%
 model_combined <- lmer(Pupil_Diff_Avg ~ factor(Drive) + (1| Subject), data = model_data)
 summary(model_combined)
 ```
-
-
-
 
 
 
