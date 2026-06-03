@@ -181,7 +181,7 @@ task_windows <- press_events %>%
     )
   )
 
-# Find the boundaries of every task block per Daq run 
+# Find the boundaries of every task block per Daq run
 task_boundaries <- task_windows %>%
   group_by(DaqName, Subject, Drive, Press_Frame) %>%
   summarise(
@@ -206,7 +206,7 @@ control_windows <- task_boundaries %>%
     Subject = Subject,
     Drive = Drive,
     Press_Frame = Press_Frame, # Linking it to the upcoming press
-    Button = "None",           # Baseline driving, no button active
+    Button = "None", # Baseline driving, no button active
     Frame = Control_Start:Control_End,
     Phase = "Control"
   )
@@ -237,23 +237,23 @@ write.csv(task_matrix, "./data/task_matrix.csv", row.names = FALSE)
 control_frames <- setdiff(non_aug$X, task_windows$Frame)
 
 # Make wide-form version for paired differences
-wideform_task_matrix <- task_matrix %>% pivot_wider(
-  names_from = Phase,
-  values_from = tail(colnames(task_matrix), -5)
-)
-wideform_task_matrix$RPupil_Diameter_mean_diff <- wideform_task_matrix$RPupil_Diameter_mean_Post_Press - wideform_task_matrix$RPupil_Diameter_mean_Pre_Press
-wideform_task_matrix$LPupil_Diameter_mean_diff <- wideform_task_matrix$LPupil_Diameter_mean_Post_Press - wideform_task_matrix$LPupil_Diameter_mean_Pre_Press
-wideform_task_matrix$Gaze_Yaw_mean_diff <- wideform_task_matrix$Gaze_Yaw_mean_Post_Press - wideform_task_matrix$Gaze_Yaw_mean_Pre_Press
-wideform_task_matrix$Gaze_Pitch_mean_diff <- wideform_task_matrix$Gaze_Pitch_mean_Post_Press - wideform_task_matrix$Gaze_Pitch_mean_Pre_Press
-
-# Combine the eye measurements to compare overall "pupil change" per button press
-model_data <- wideform_task_matrix %>%
-  mutate(Pupil_Diff_Avg = (RPupil_Diameter_mean_diff + LPupil_Diameter_mean_diff) / 2)
+wideform_task_matrix <- task_matrix %>%
+  pivot_wider(
+    names_from = Phase,
+    values_from = tail(colnames(task_matrix), -5)
+  ) %>%
+  mutate(
+    RPupil_Diameter_mean_diff = RPupil_Diameter_mean_Post_Press - RPupil_Diameter_mean_Pre_Press,
+    LPupil_Diameter_mean_diff = LPupil_Diameter_mean_Post_Press - LPupil_Diameter_mean_Pre_Press,
+    Gaze_Yaw_mean_diff = Gaze_Yaw_mean_Post_Press - Gaze_Yaw_mean_Pre_Press,
+    Gaze_Pitch_mean_diff = Gaze_Pitch_mean_Post_Press - Gaze_Pitch_mean_Pre_Press,
+    Pupil_Diff_Avg = (RPupil_Diameter_mean_diff + LPupil_Diameter_mean_diff) / 2
+  )
 
 # Fixed Effect = Button (Left vs Right)
 # Random effect
 
-model_combined <- lmer(Pupil_Diff_Avg ~ factor(Drive) + (1 | Subject), data = model_data)
+model_combined <- lmer(Pupil_Diff_Avg ~ factor(Drive) + (1 | Subject), data = wideform_task_matrix)
 summary(model_combined)
 ```
 
