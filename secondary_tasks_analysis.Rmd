@@ -14,6 +14,7 @@ library(dplyr)
 library(readxl)
 library(saccades)
 library(lme4)
+library(arrow)
 ```
 
 ## `ST_*` alignment
@@ -28,13 +29,11 @@ clear_env <- function() {
   gc()
 }
 
-# Load in CSV
-if (!exists("non_aug_raw")) {
-  non_aug_raw <- read.csv("./data/non_aug_data.csv")
-}
+# Load in data
+non_aug <- read_feather("./data/non_aug_data.feather")
 
 # Replace repeated button-press observations with zeros
-non_aug <- non_aug_raw %>%
+non_aug <- non_aug %>%
   mutate(Left_Button_Press = case_when(
     (Left_Button_Press == lag(Left_Button_Press)) &
       (Left_Button_Press == 1) |
@@ -47,11 +46,13 @@ non_aug <- non_aug_raw %>%
       (Right_Button_Press == 2) ~ 0,
     TRUE ~ Right_Button_Press
   ))
+
 # Replace coded 99 values from python script with NA values
 non_aug[non_aug == 99] <- NA
 
 # Use 1-base indexing for X (match row number)
-non_aug$X <- 1:nrow(non_aug)
+non_aug <- non_aug %>%
+  mutate(X = 1:nrow(non_aug), .before = 1)
 ```
 
 ```{r Get ST columns}
