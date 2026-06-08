@@ -229,6 +229,7 @@ task_matrix <- task_windows_with_control %>%
     RPupil_Diameter_mean = mean(RPupil_Diameter, na.rm = TRUE),
     Gaze_Pitch_mean = mean(Gaze_Pitch, na.rm = TRUE),
     Gaze_Yaw_mean = mean(Gaze_Yaw, na.rm = TRUE),
+    Deviation_frames_prop = sum(abs(Vehicle_Lat_Dev) > Road_Width / 4) / n(),
     .groups = "drop"
   )
 
@@ -256,6 +257,12 @@ wideform_task_matrix <- task_matrix %>%
 
 model_combined <- lmer(Pupil_Diff_Avg ~ factor(Drive) + (1 | Subject), data = wideform_task_matrix)
 summary(model_combined)
+```
+
+```{r Preliminary lane deviation analysis, fig.show="hold", out.width = "50%"}
+ggplot(data = filter(task_matrix, Drive == 1), aes(x = Deviation_frames_prop)) + geom_density() + geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 1)$Deviation_frames_prop)), linetype = "dashed") + xlim(0,1) + labs(title = "Sober time deviated (as proportion)")
+
+ggplot(data = filter(task_matrix, Drive == 2), aes(x = Deviation_frames_prop)) + geom_density() + geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 2)$Deviation_frames_prop)), linetype = "dashed") + xlim(0,1) + labs(title = "0.1 BrAC time deviated (as proportion)")
 ```
 
 
