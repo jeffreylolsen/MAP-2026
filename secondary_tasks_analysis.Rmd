@@ -15,9 +15,10 @@ library(readxl)
 library(saccades)
 library(lme4)
 library(arrow)
+library(glue)
 ```
 
-## `ST_*` alignment
+## Read in DMS data
 
 ```{r Read in DMS data}
 # Load in data
@@ -45,6 +46,8 @@ non_aug[non_aug == 99] <- NA
 non_aug <- non_aug %>%
   mutate(X = 1:nrow(non_aug), .before = 1)
 ```
+
+# Get `ST_*` columns
 
 ```{r Get ST columns}
 output <- read_excel("./data/output_IIHS_withDMS.xls") %>%
@@ -82,10 +85,14 @@ output <- merge(output,
 )
 ```
 
+## Locate button presses
+
 ```{r Locate button presses}
 left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X
 right_button_press_indices <- filter(non_aug, Right_Button_Press == 1)$X
 ```
+
+## Add and modify predictors
 
 ```{r Add and modify predictors}
 non_aug$Blinking <- non_aug$LPupil_Diameter == 0 & non_aug$RPupil_Diameter == 0
@@ -117,7 +124,9 @@ non_aug$Eye_Event[flattened_indices] <- rep(as.character(non_saccades$event), ti
 non_aug[is.na(non_aug$Eye_Event), "Eye_Event"] <- "saccade"
 ```
 
-```{r Plot high counts to debug, fig.show="hold", out.width = "50%"}
+## Debug high task button-press counts
+
+```{r Plot high counts to debug, fig.show = "hold", out.width = "50%"}
 top_ten_left_press_runs <- head(arrange(output, desc(Counted_Left_Button_Press)), 10)$DaqName
 for (run in top_ten_left_press_runs) {
   plot <- ggplot(
@@ -136,6 +145,8 @@ for (run in top_ten_left_press_runs) {
   print(plot)
 }
 ```
+
+## Aggregate matrix
 
 ```{r Aggregate Matrix}
 # Long-form wrt pre/post pairs
@@ -246,7 +257,11 @@ wideform_task_matrix <- task_matrix %>%
     Pupil_Diff_Avg = (RPupil_Diameter_mean_diff + LPupil_Diameter_mean_diff) / 2,
     Deviation_Frames_Prop_Diff = (Deviation_frames_prop_Post_Press - Deviation_frames_prop_Pre_Press)
   )
+```
 
+## Models
+
+```{r Models}
 # Fixed Effect = Button (Left vs Right)
 # Random effect
 
@@ -259,7 +274,9 @@ model2 <- lmer(Deviation_Frames_Prop_Diff ~ factor(Drive) + (1 | Subject), data 
 summary(model2)
 ```
 
-```{r Preliminary lane deviation analysis, fig.show="hold", out.width = "50%"}
+## Preliminary lane deviation analysis
+
+```{r Preliminary lane deviation analysis, fig.show = "hold", out.width = "50%"}
 ggplot(data = filter(task_matrix, Drive == 1 & Phase == "Pre_Press"), aes(x = Deviation_frames_prop)) +
   geom_density() +
   geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 1 & Phase == "Pre_Press")$Deviation_frames_prop)), linetype = "dashed") +
@@ -281,6 +298,17 @@ ggplot(data = filter(task_matrix, Drive == 2 & Phase == "Post_Press"), aes(x = D
   geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 2 & Phase == "Post_Press")$Deviation_frames_prop)), linetype = "dashed") +
   xlim(0, 1) +
   labs(title = "0.1 BrAC time deviated post-press (as proportion)")
+```
+
+## Distributions of deviation proportion differences by drive
+
+```{r Distributions of deviation proportion differences by drive, fig.show = "hold", out.width = "20%"}
+# Limit to tasks where there was at least one frame of deviation before or after
+for (i in 1:5) {
+  print(ggplot(data = wideform_task_matrix %>% filter(Drive == i) %>% filter(Deviation_frames_prop_Post_Press != 0 | Deviation_frames_prop_Pre_Press != 0), aes(x = Deviation_Frames_Prop_Diff)) +
+    geom_density() +
+    labs(title = glue("Drive {i}")))
+}
 ```
 
 
