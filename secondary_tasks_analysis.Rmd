@@ -240,7 +240,8 @@ wideform_task_matrix <- task_matrix %>%
     LPupil_Diameter_mean_diff = LPupil_Diameter_mean_Post_Press - LPupil_Diameter_mean_Pre_Press,
     Gaze_Yaw_mean_diff = Gaze_Yaw_mean_Post_Press - Gaze_Yaw_mean_Pre_Press,
     Gaze_Pitch_mean_diff = Gaze_Pitch_mean_Post_Press - Gaze_Pitch_mean_Pre_Press,
-    Pupil_Diff_Avg = (RPupil_Diameter_mean_diff + LPupil_Diameter_mean_diff) / 2
+    Pupil_Diff_Avg = (RPupil_Diameter_mean_diff + LPupil_Diameter_mean_diff) / 2,
+    Deviation_Frames_Prop_Diff = (Deviation_frames_prop_Post_Press - Deviation_frames_prop_Pre_Press)
   )
 
 # Fixed Effect = Button (Left vs Right)
@@ -248,6 +249,11 @@ wideform_task_matrix <- task_matrix %>%
 
 model_combined <- lmer(Pupil_Diff_Avg ~ factor(Drive) + (1 | Subject), data = wideform_task_matrix)
 summary(model_combined)
+
+# Model to compare Pupil_diff_avg in relation to press events and lane deviation events
+
+model2 <- lmer(Deviation_Frames_Prop_Diff ~ factor(Drive) + (1| Subject), data = wideform_task_matrix)
+summary(model2)
 ```
 
 ```{r Preliminary lane deviation analysis, fig.show="hold", out.width = "50%"}
