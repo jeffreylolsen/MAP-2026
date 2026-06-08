@@ -144,7 +144,7 @@ for (run in top_ten_left_press_runs) {
 time_frame <- 180
 
 # Sensitivity of lateral deviation
-lat_dev_sens = 6
+lat_dev_sens = 4
 
 # Get first frame of each Daq
 daq_first_frame <- non_aug %>%
