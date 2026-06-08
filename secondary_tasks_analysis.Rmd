@@ -144,7 +144,7 @@ for (run in top_ten_left_press_runs) {
 time_frame <- 180
 
 # Sensitivity of lateral deviation
-lat_dev_sens = 4
+lat_dev_sens <- 4
 
 # Get first frame of each Daq
 daq_first_frame <- non_aug %>%
@@ -255,16 +255,32 @@ summary(model_combined)
 
 # Model to compare Pupil_diff_avg in relation to press events and lane deviation events
 
-model2 <- lmer(Deviation_Frames_Prop_Diff ~ factor(Drive) + (1| Subject), data = wideform_task_matrix)
+model2 <- lmer(Deviation_Frames_Prop_Diff ~ factor(Drive) + (1 | Subject), data = wideform_task_matrix)
 summary(model2)
 ```
 
 ```{r Preliminary lane deviation analysis, fig.show="hold", out.width = "50%"}
-ggplot(data = filter(task_matrix, Drive == 1 & Phase == "Pre_Press"), aes(x = Deviation_frames_prop)) + geom_density() + geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 1 & Phase == "Pre_Press")$Deviation_frames_prop)), linetype = "dashed") + xlim(0,1) + labs(title = "Sober time deviated pre-press (as proportion)")
-ggplot(data = filter(task_matrix, Drive == 1 & Phase == "Post_Press"), aes(x = Deviation_frames_prop)) + geom_density() + geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 1 & Phase == "Post_Press")$Deviation_frames_prop)), linetype = "dashed") + xlim(0,1) + labs(title = "Sober time deviated post-press (as proportion)")
+ggplot(data = filter(task_matrix, Drive == 1 & Phase == "Pre_Press"), aes(x = Deviation_frames_prop)) +
+  geom_density() +
+  geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 1 & Phase == "Pre_Press")$Deviation_frames_prop)), linetype = "dashed") +
+  xlim(0, 1) +
+  labs(title = "Sober time deviated pre-press (as proportion)")
+ggplot(data = filter(task_matrix, Drive == 1 & Phase == "Post_Press"), aes(x = Deviation_frames_prop)) +
+  geom_density() +
+  geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 1 & Phase == "Post_Press")$Deviation_frames_prop)), linetype = "dashed") +
+  xlim(0, 1) +
+  labs(title = "Sober time deviated post-press (as proportion)")
 
-ggplot(data = filter(task_matrix, Drive == 2 & Phase == "Pre_Press"), aes(x = Deviation_frames_prop)) + geom_density() + geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 2 & Phase == "Pre_Press")$Deviation_frames_prop)), linetype = "dashed") + xlim(0,1) + labs(title = "0.1 BrAC time deviated pre-press (as proportion)")
-ggplot(data = filter(task_matrix, Drive == 2 & Phase == "Post_Press"), aes(x = Deviation_frames_prop)) + geom_density() + geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 2 & Phase == "Post_Press")$Deviation_frames_prop)), linetype = "dashed") + xlim(0,1) + labs(title = "0.1 BrAC time deviated post-press (as proportion)")
+ggplot(data = filter(task_matrix, Drive == 2 & Phase == "Pre_Press"), aes(x = Deviation_frames_prop)) +
+  geom_density() +
+  geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 2 & Phase == "Pre_Press")$Deviation_frames_prop)), linetype = "dashed") +
+  xlim(0, 1) +
+  labs(title = "0.1 BrAC time deviated pre-press (as proportion)")
+ggplot(data = filter(task_matrix, Drive == 2 & Phase == "Post_Press"), aes(x = Deviation_frames_prop)) +
+  geom_density() +
+  geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 2 & Phase == "Post_Press")$Deviation_frames_prop)), linetype = "dashed") +
+  xlim(0, 1) +
+  labs(title = "0.1 BrAC time deviated post-press (as proportion)")
 ```
 
 
