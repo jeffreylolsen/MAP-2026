@@ -20,15 +20,6 @@ library(arrow)
 ## `ST_*` alignment
 
 ```{r Read in DMS data}
-# Function to clear environment
-clear_env <- function() {
-  rm(
-    list = ls(envir = .GlobalEnv)[ls(envir = .GlobalEnv) != "non_aug_raw"],
-    envir = .GlobalEnv
-  )
-  gc()
-}
-
 # Load in data
 non_aug <- read_feather("./data/non_aug_data.feather")
 
