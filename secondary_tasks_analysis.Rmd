@@ -42,9 +42,12 @@ non_aug <- non_aug %>%
 # Replace coded 99 values from python script with NA values
 non_aug[non_aug == 99] <- NA
 
-# Use 1-base indexing for X (match row number)
+# Use 1-base indexing for X and Frame_Num (match row number)
 non_aug <- non_aug %>%
-  mutate(X = 1:nrow(non_aug), .before = 1)
+  mutate(X = 1:nrow(non_aug), .before = 1) %>%
+  group_by(DaqName) %>%
+  mutate(Frame_Num = row_number(), .after = X) %>%
+  ungroup()
 ```
 
 # Get `ST_*` columns
@@ -310,6 +313,13 @@ for (i in 1:5) {
     labs(title = glue("Drive {i}")))
 }
 ```
+
+
+
+
+
+
+
 
 
 
