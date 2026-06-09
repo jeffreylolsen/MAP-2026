@@ -91,8 +91,8 @@ output <- merge(output,
 ## Locate button presses
 
 ```{r Locate button presses}
-left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X
-right_button_press_indices <- filter(non_aug, Right_Button_Press == 1)$X
+#left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X
+#right_button_press_indices <- filter(non_aug, Right_Button_Press == 1)$X
 ```
 
 ## Add and modify predictors
@@ -125,6 +125,7 @@ indices <- mapply(seq, non_saccades$start, non_saccades$end)
 flattened_indices <- unlist(indices)
 non_aug$Eye_Event[flattened_indices] <- rep(as.character(non_saccades$event), times = lengths(indices))
 non_aug[is.na(non_aug$Eye_Event), "Eye_Event"] <- "saccade"
+rm(non_saccades, indices, flattened_indices)
 ```
 
 ## Debug high task button-press counts
@@ -135,7 +136,7 @@ for (run in top_ten_left_press_runs) {
   plot <- ggplot(
     data = filter(non_aug, DaqName == run),
     aes(
-      x = seq(1, length(Left_Button_Press)),
+      x = Frame_Num,
       y = Left_Button_Press
     )
   ) +
@@ -146,6 +147,7 @@ for (run in top_ten_left_press_runs) {
       y = "Button press"
     )
   print(plot)
+  rm(plot)
 }
 ```
 
@@ -160,15 +162,10 @@ time_frame <- 180
 # Sensitivity of lateral deviation
 lat_dev_sens <- 4
 
-# Get first frame of each Daq
-daq_first_frame <- non_aug %>%
-  group_by(DaqName) %>%
-  summarize(first_x = min(X), .groups = "drop")
-
 # Cleaned button press frames
 press_events <- non_aug %>%
   filter(Left_Button_Press == 1 | Right_Button_Press == 1) %>%
-  select(DaqName, Subject, Drive, X, Left_Button_Press, Right_Button_Press)
+  select(DaqName, Subject, Drive, X, Frame_Num, Left_Button_Press, Right_Button_Press)
 
 # Window of frames around each press
 task_windows <- press_events %>%
@@ -178,7 +175,7 @@ task_windows <- press_events %>%
     Subject = Subject,
     Drive = Drive,
     # Want the frame number within the run of the simulator
-    Press_Frame = X + 1 - daq_first_frame$first_x[match(DaqName, daq_first_frame$DaqName)],
+    Press_Frame = Frame_Num,
     Button = ifelse(Left_Button_Press == 1, "Left", "Right"),
     Frame = c(
       (X - time_frame):(X - 1),
@@ -219,15 +216,17 @@ control_windows <- task_boundaries %>%
     Frame = Control_Start:Control_End,
     Phase = "Control"
   )
+rm(task_boundaries)
 
 # Combine with original Pre/Post task windows with the new control windows
 all_windows <- bind_rows(task_windows, control_windows) %>%
   arrange(DaqName, Frame)
+rm(control_windows, task_windows)
 
 # Pull in raw eye data for ALL windows (Tasks and Controls)
 task_windows_with_control <- all_windows %>%
   inner_join(select(non_aug, -DaqName), by = c("Subject", "Drive", "Frame" = "X"))
-
+rm(all_windows)
 
 # Aggregate into one row per window with the control phases
 task_matrix <- task_windows_with_control %>%
@@ -240,11 +239,9 @@ task_matrix <- task_windows_with_control %>%
     Deviation_frames_prop = sum(abs(Vehicle_Lat_Dev) > Road_Width / lat_dev_sens) / n(),
     .groups = "drop"
   )
+rm(task_windows_with_control)
 
 write.csv(task_matrix, "./data/task_matrix.csv", row.names = FALSE)
-
-# Get control frames (not near tasks)
-control_frames <- setdiff(non_aug$X, task_windows$Frame)
 
 # Make wide-form version for paired differences
 wideform_task_matrix <- task_matrix %>%
@@ -310,10 +307,10 @@ ggplot(data = filter(task_matrix, Drive == 2 & Phase == "Post_Press"), aes(x = D
 for (i in 1:5) {
   print(ggplot(data = wideform_task_matrix %>% filter(Drive == i) %>% filter(Deviation_frames_prop_Post_Press != 0 | Deviation_frames_prop_Pre_Press != 0), aes(x = Deviation_Frames_Prop_Diff)) +
     geom_density() +
+    xlim(-1,1) +
     labs(title = glue("Drive {i}")))
 }
 ```
-
 
 
 
