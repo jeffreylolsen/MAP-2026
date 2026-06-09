@@ -16,6 +16,7 @@ library(saccades)
 library(lme4)
 library(arrow)
 library(glue)
+library(mgcv)
 ```
 
 ## Read in DMS data
@@ -237,6 +238,8 @@ task_matrix <- task_windows_with_control %>%
     Gaze_Pitch_mean = mean(Gaze_Pitch, na.rm = TRUE),
     Gaze_Yaw_mean = mean(Gaze_Yaw, na.rm = TRUE),
     Deviation_frames_prop = sum(abs(Vehicle_Lat_Dev) > Road_Width / lat_dev_sens) / n(),
+    BAC = Start_BAC[1],
+    KSS = KSS_Score[1],
     .groups = "drop"
   )
 rm(task_windows_with_control)
@@ -247,7 +250,7 @@ write.csv(task_matrix, "./data/task_matrix.csv", row.names = FALSE)
 wideform_task_matrix <- task_matrix %>%
   pivot_wider(
     names_from = Phase,
-    values_from = tail(colnames(task_matrix), -5)
+    values_from = setdiff(tail(colnames(task_matrix), -5), c("BAC", "KSS"))
   ) %>%
   mutate(
     RPupil_Diameter_mean_diff = RPupil_Diameter_mean_Post_Press - RPupil_Diameter_mean_Pre_Press,
@@ -302,7 +305,7 @@ ggplot(data = filter(task_matrix, Drive == 2 & Phase == "Post_Press"), aes(x = D
 
 ## Distributions of deviation proportion differences by drive
 
-```{r Distributions of deviation proportion differences by drive, fig.show = "hold", out.width = "20%"}
+```{r Distributions of deviation proportion differences by drive, fig.show = "hold"}
 # Limit to tasks where there was at least one frame of deviation before or after
 for (i in 1:5) {
   print(ggplot(data = wideform_task_matrix %>% filter(Drive == i) %>% filter(Deviation_frames_prop_Post_Press != 0 | Deviation_frames_prop_Pre_Press != 0), aes(x = Deviation_Frames_Prop_Diff)) +
@@ -312,6 +315,19 @@ for (i in 1:5) {
 }
 ```
 
+## Plots of trends across individuals
+
+```{r Plots of trends across individuals, fig.show="hold"}
+for (i in 1:5) {
+  print(ggplot(data = filter(non_aug, Drive == i) %>%
+    group_by(Subject, Drive, Frame_Num) %>%
+    mutate(RPupil_Diameter = mean(RPupil_Diameter, na.rm = TRUE)) %>%
+    ungroup(), aes(x = Frame_Num, y = RPupil_Diameter, color = Subject)) +
+    geom_smooth(size = 0.1, se=FALSE, method = "bam", formula = y ~ s(x, bs = "cs")) +
+    theme(legend.position = "NONE") +
+    labs(title = glue("Drive {i}")))
+}
+```
 
 
 
