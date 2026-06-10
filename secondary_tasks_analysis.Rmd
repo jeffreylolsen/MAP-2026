@@ -410,7 +410,7 @@ for (i in 1:5) {
   print(ggplot(
     data = wideform_task_matrix %>% filter(
       Drive == i,
-      Deviation_frames_prop_Post_Press != 0 ||
+      Deviation_frames_prop_Post_Press != 0 |
         Deviation_frames_prop_Pre_Press != 0
     ),
     aes(x = Deviation_Frames_Prop_Diff)
@@ -503,3 +503,26 @@ for (i in 1:5) {
   print(plot_eyes_around_task(1, i))
 }
 ```
+
+
+```{r}
+eye_kss <- non_aug %>%
+  mutate(Pupil_Avg = (LPupil_Diameter + RPupil_Diameter) / 2) %>%
+  filter(!is.na(Pupil_Avg) & !is.na(KSS_Score))
+```
+
+
+```{r Eye Metric KSS plot, eval = MAKE_PLOTS}
+ for (i in 1:5) {
+   print(ggplot(data = filter(eye_kss, Drive == i),
+                aes(x = Frame_Num, y = Pupil_Avg))+
+           geom_smooth(aes(group = Subject, color = KSS_Score),
+                       linewidth = 0.3, se = FALSE,
+                       method = "bam", formula = y ~ s(x, bs = "cs")) +
+           scale_color_viridis_c(name = "KSS", direction = -1) +
+           theme(legend.position = "bottom") +
+           labs(title = glue("Drive {i}")))
+ }
+
+```
+
