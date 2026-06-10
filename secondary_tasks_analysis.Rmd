@@ -102,7 +102,8 @@ right_button_press_indices <- filter(non_aug, Right_Button_Press == 1)$X
 ## Add and modify predictors
 
 ```{r Add and modify predictors}
-non_aug$Blinking <- non_aug$LPupil_Diameter == 0 & non_aug$RPupil_Diameter == 0
+non_aug$Blinking <- non_aug$LPupil_Diameter == 0 &
+  non_aug$RPupil_Diameter == 0
 
 # Get saccades, fixations, and blinks
 saccade_sens <- 15 # Detection threshold parameter for `saccades` event detection
@@ -124,10 +125,16 @@ non_saccades <- detect.fixations(
 )
 
 # Add column to `non_aug` for eye event type
-non_aug$Eye_Event <- factor("saccade", levels = c("saccade", "blink", "fixation", "too short"))
+non_aug$Eye_Event <- factor(
+  "saccade",
+  levels = c("saccade", "blink", "fixation", "too short")
+)
 indices <- mapply(seq, non_saccades$start, non_saccades$end)
 flattened_indices <- unlist(indices)
-non_aug$Eye_Event[flattened_indices] <- rep(as.character(non_saccades$event), times = lengths(indices))
+non_aug$Eye_Event[flattened_indices] <- rep(
+  as.character(non_saccades$event),
+  times = lengths(indices)
+)
 non_aug[is.na(non_aug$Eye_Event), "Eye_Event"] <- "saccade"
 rm(non_saccades, indices, flattened_indices)
 ```
@@ -135,7 +142,13 @@ rm(non_saccades, indices, flattened_indices)
 ## Debug high task button-press counts
 
 ```{r Plot high counts to debug, fig.show = "hold", out.width = "50%", eval = MAKE_PLOTS}
-top_ten_left_press_runs <- head(arrange(output, desc(Counted_Left_Button_Press)), 10)$DaqName
+top_ten_left_press_runs <- head(
+  arrange(
+    output,
+    desc(Counted_Left_Button_Press)
+  ),
+  10
+)$DaqName
 for (run in top_ten_left_press_runs) {
   plot <- ggplot(
     data = filter(non_aug, DaqName == run),
@@ -169,7 +182,15 @@ lat_dev_sens <- 4
 # Cleaned button press frames
 press_events <- non_aug %>%
   filter(Left_Button_Press == 1 | Right_Button_Press == 1) %>%
-  select(DaqName, Subject, Drive, X, Frame_Num, Left_Button_Press, Right_Button_Press)
+  select(
+    DaqName,
+    Subject,
+    Drive,
+    X,
+    Frame_Num,
+    Left_Button_Press,
+    Right_Button_Press
+  )
 
 # Window of frames around each press
 task_windows <- press_events %>%
@@ -229,7 +250,10 @@ rm(control_windows, task_windows)
 
 # Pull in raw eye data for ALL windows (Tasks and Controls)
 task_windows_with_control <- all_windows %>%
-  inner_join(select(non_aug, -DaqName), by = c("Subject", "Drive", "Frame" = "X"))
+  inner_join(
+    select(non_aug, -DaqName),
+    by = c("Subject", "Drive", "Frame" = "X")
+  )
 rm(all_windows)
 
 # Aggregate into one row per window with the control phases
@@ -240,7 +264,9 @@ task_matrix <- task_windows_with_control %>%
     RPupil_Diameter_mean = mean(RPupil_Diameter, na.rm = TRUE),
     Gaze_Pitch_mean = mean(Gaze_Pitch, na.rm = TRUE),
     Gaze_Yaw_mean = mean(Gaze_Yaw, na.rm = TRUE),
-    Deviation_frames_prop = sum(abs(Vehicle_Lat_Dev) > Road_Width / lat_dev_sens) / n(),
+    Deviation_frames_prop = sum(
+      abs(Vehicle_Lat_Dev) > Road_Width / lat_dev_sens
+    ) / n(),
     BAC = Start_BAC[1],
     KSS = KSS_Score[1],
     Blink_Count = max(Blink_Counter) - min(Blink_Counter),
@@ -256,15 +282,30 @@ write.csv(task_matrix, "./data/task_matrix.csv", row.names = FALSE)
 wideform_task_matrix <- task_matrix %>%
   pivot_wider(
     names_from = Phase,
-    values_from = setdiff(tail(colnames(task_matrix), -5), c("BAC", "KSS"))
+    values_from = setdiff(
+      tail(colnames(task_matrix), -5),
+      c("BAC", "KSS")
+    )
   ) %>%
   mutate(
-    RPupil_Diameter_mean_diff = RPupil_Diameter_mean_Post_Press - RPupil_Diameter_mean_Pre_Press,
-    LPupil_Diameter_mean_diff = LPupil_Diameter_mean_Post_Press - LPupil_Diameter_mean_Pre_Press,
-    Gaze_Yaw_mean_diff = Gaze_Yaw_mean_Post_Press - Gaze_Yaw_mean_Pre_Press,
-    Gaze_Pitch_mean_diff = Gaze_Pitch_mean_Post_Press - Gaze_Pitch_mean_Pre_Press,
-    Pupil_Diff_Avg = (RPupil_Diameter_mean_diff + LPupil_Diameter_mean_diff) / 2,
-    Deviation_Frames_Prop_Diff = (Deviation_frames_prop_Post_Press - Deviation_frames_prop_Pre_Press)
+    RPupil_Diameter_mean_diff = (
+      RPupil_Diameter_mean_Post_Press + RPupil_Diameter_mean_Pre_Press
+    ),
+    LPupil_Diameter_mean_diff = (
+      LPupil_Diameter_mean_Post_Press - LPupil_Diameter_mean_Pre_Press
+    ),
+    Gaze_Yaw_mean_diff = (
+      Gaze_Yaw_mean_Post_Press - Gaze_Yaw_mean_Pre_Press
+    ),
+    Gaze_Pitch_mean_diff = (
+      Gaze_Pitch_mean_Post_Press - Gaze_Pitch_mean_Pre_Press
+    ),
+    Pupil_Diff_Avg = (
+      (RPupil_Diameter_mean_diff + LPupil_Diameter_mean_diff) / 2
+    ),
+    Deviation_Frames_Prop_Diff = (
+      Deviation_frames_prop_Post_Press - Deviation_frames_prop_Pre_Press
+    )
   )
 ```
 
@@ -274,37 +315,89 @@ wideform_task_matrix <- task_matrix %>%
 # Fixed Effect = Button (Left vs Right)
 # Random effect
 
-model_combined <- lmer(Pupil_Diff_Avg ~ factor(Drive) + (1 | Subject), data = wideform_task_matrix)
+model_combined <- lmer(Pupil_Diff_Avg ~ factor(Drive) + (1 | Subject),
+  data = wideform_task_matrix
+)
 summary(model_combined)
 
 # Model to compare Pupil_diff_avg in relation to press events and lane deviation events
 
-model2 <- lmer(Deviation_Frames_Prop_Diff ~ factor(Drive) + (1 | Subject), data = wideform_task_matrix)
+model2 <- lmer(Deviation_Frames_Prop_Diff ~ factor(Drive) + (1 | Subject),
+  data = wideform_task_matrix
+)
 summary(model2)
 ```
 
 ## Preliminary lane deviation analysis
 
 ```{r Preliminary lane deviation analysis, eval = MAKE_PLOTS}
-ggplot(data = filter(task_matrix, Drive == 1 & Phase == "Pre_Press"), aes(x = Deviation_frames_prop)) +
+ggplot(
+  data = filter(
+    task_matrix,
+    Drive == 1 & Phase == "Pre_Press"
+  ),
+  aes(x = Deviation_frames_prop)
+) +
   geom_density() +
-  geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 1 & Phase == "Pre_Press")$Deviation_frames_prop)), linetype = "dashed") +
+  geom_vline(
+    aes(xintercept = mean(filter(
+      task_matrix,
+      Drive == 1 & Phase == "Pre_Press"
+    )$Deviation_frames_prop)),
+    linetype = "dashed"
+  ) +
   xlim(0, 1) +
   labs(title = "Sober time deviated pre-press (as proportion)")
-ggplot(data = filter(task_matrix, Drive == 1 & Phase == "Post_Press"), aes(x = Deviation_frames_prop)) +
+ggplot(
+  data = filter(
+    task_matrix,
+    Drive == 1 & Phase == "Post_Press"
+  ),
+  aes(x = Deviation_frames_prop)
+) +
   geom_density() +
-  geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 1 & Phase == "Post_Press")$Deviation_frames_prop)), linetype = "dashed") +
+  geom_vline(
+    aes(xintercept = mean(filter(
+      task_matrix,
+      Drive == 1 & Phase == "Post_Press"
+    )$Deviation_frames_prop)),
+    linetype = "dashed"
+  ) +
   xlim(0, 1) +
   labs(title = "Sober time deviated post-press (as proportion)")
 
-ggplot(data = filter(task_matrix, Drive == 2 & Phase == "Pre_Press"), aes(x = Deviation_frames_prop)) +
+ggplot(
+  data = filter(
+    task_matrix,
+    Drive == 2 & Phase == "Pre_Press"
+  ),
+  aes(x = Deviation_frames_prop)
+) +
   geom_density() +
-  geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 2 & Phase == "Pre_Press")$Deviation_frames_prop)), linetype = "dashed") +
+  geom_vline(
+    aes(xintercept = mean(filter(
+      task_matrix,
+      Drive == 2 & Phase == "Pre_Press"
+    )$Deviation_frames_prop)),
+    linetype = "dashed"
+  ) +
   xlim(0, 1) +
   labs(title = "0.1 BrAC time deviated pre-press (as proportion)")
-ggplot(data = filter(task_matrix, Drive == 2 & Phase == "Post_Press"), aes(x = Deviation_frames_prop)) +
+ggplot(
+  data = filter(
+    task_matrix,
+    Drive == 2 & Phase == "Post_Press"
+  ),
+  aes(x = Deviation_frames_prop)
+) +
   geom_density() +
-  geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 2 & Phase == "Post_Press")$Deviation_frames_prop)), linetype = "dashed") +
+  geom_vline(
+    aes(xintercept = mean(filter(
+      task_matrix,
+      Drive == 2 & Phase == "Post_Press"
+    )$Deviation_frames_prop)),
+    linetype = "dashed"
+  ) +
   xlim(0, 1) +
   labs(title = "0.1 BrAC time deviated post-press (as proportion)")
 ```
@@ -314,7 +407,14 @@ ggplot(data = filter(task_matrix, Drive == 2 & Phase == "Post_Press"), aes(x = D
 ```{r Distributions of deviation proportion differences by drive, eval = MAKE_PLOTS}
 # Limit to tasks where there was at least one frame of deviation before or after
 for (i in 1:5) {
-  print(ggplot(data = wideform_task_matrix %>% filter(Drive == i) %>% filter(Deviation_frames_prop_Post_Press != 0 | Deviation_frames_prop_Pre_Press != 0), aes(x = Deviation_Frames_Prop_Diff)) +
+  print(ggplot(
+    data = wideform_task_matrix %>% filter(
+      Drive == i,
+      Deviation_frames_prop_Post_Press != 0 ||
+        Deviation_frames_prop_Pre_Press != 0
+    ),
+    aes(x = Deviation_Frames_Prop_Diff)
+  ) +
     geom_density() +
     xlim(-1, 1) +
     labs(title = glue("Drive {i}")))
@@ -330,7 +430,12 @@ for (i in 1:5) {
     group_by(Subject, Drive, Frame_Num) %>%
     mutate(RPupil_Diameter = mean(RPupil_Diameter, na.rm = TRUE)) %>%
     ungroup(), aes(x = Frame_Num, y = RPupil_Diameter, color = Subject)) +
-    geom_smooth(linewidth = 0.1, se = FALSE, method = "bam", formula = y ~ s(x, bs = "cs")) +
+    geom_smooth(
+      linewidth = 0.1,
+      se = FALSE,
+      method = "bam",
+      formula = y ~ s(x, bs = "cs")
+    ) +
     theme(legend.position = "NONE") +
     labs(title = glue("Drive {i}")))
 }
@@ -356,12 +461,33 @@ ggplot(plot_data, aes(x = Phase, y = Pupil_Avg)) +
 
 ```{r Plots of trends around button presses, eval = MAKE_PLOTS}
 # Create a list of filtered data frames
-obs_around_press <- bind_rows(lapply(c(left_button_press_indices, right_button_press_indices), function(press) {
-  non_aug[seq(press - 180, min(press + 179, nrow(non_aug))), ] %>% mutate(Press_Frame = press, Frame_in_Segment = X - press + 181)
-}))
+obs_around_press <- bind_rows(lapply(
+  c(
+    left_button_press_indices,
+    right_button_press_indices
+  ),
+  function(press) {
+    non_aug[seq(press - 180, min(press + 179, nrow(non_aug))), ] %>%
+      mutate(
+        Press_Frame = press,
+        Frame_in_Segment = X - press + 181
+      )
+  }
+))
 
 plot_eyes_around_task <- function(subject, drive) {
-  ggplot(data = obs_around_press %>% filter(Subject == subject, Drive == drive), aes(x = Frame_in_Segment - 180, y = RPupil_Diameter, color = factor(Press_Frame))) +
+  ggplot(
+    data = filter(
+      obs_around_press,
+      Subject == subject,
+      Drive == drive
+    ),
+    aes(
+      x = Frame_in_Segment - 180,
+      y = RPupil_Diameter,
+      color = factor(Press_Frame)
+    )
+  ) +
     geom_line(size = 0.1) +
     theme(legend.position = "NONE") +
     geom_vline(xintercept = 0, linewidth = 1) +
