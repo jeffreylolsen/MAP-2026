@@ -9,6 +9,7 @@ date: "`r Sys.Date()`"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
 library(tidyverse)
 library(dplyr)
 library(readxl)
@@ -17,6 +18,8 @@ library(lme4)
 library(arrow)
 library(glue)
 library(mgcv)
+
+MAKE_PLOTS = FALSE
 ```
 
 ## Read in DMS data
@@ -131,7 +134,7 @@ rm(non_saccades, indices, flattened_indices)
 
 ## Debug high task button-press counts
 
-```{r Plot high counts to debug, fig.show = "hold", out.width = "50%"}
+```{r Plot high counts to debug, fig.show = "hold", out.width = "50%", eval = MAKE_PLOTS}
 top_ten_left_press_runs <- head(arrange(output, desc(Counted_Left_Button_Press)), 10)$DaqName
 for (run in top_ten_left_press_runs) {
   plot <- ggplot(
@@ -282,7 +285,7 @@ summary(model2)
 
 ## Preliminary lane deviation analysis
 
-```{r Preliminary lane deviation analysis}
+```{r Preliminary lane deviation analysis, eval = MAKE_PLOTS}
 ggplot(data = filter(task_matrix, Drive == 1 & Phase == "Pre_Press"), aes(x = Deviation_frames_prop)) +
   geom_density() +
   geom_vline(aes(xintercept = mean(filter(task_matrix, Drive == 1 & Phase == "Pre_Press")$Deviation_frames_prop)), linetype = "dashed") +
@@ -308,7 +311,7 @@ ggplot(data = filter(task_matrix, Drive == 2 & Phase == "Post_Press"), aes(x = D
 
 ## Distributions of deviation proportion differences by drive
 
-```{r Distributions of deviation proportion differences by drive}
+```{r Distributions of deviation proportion differences by drive, eval = MAKE_PLOTS}
 # Limit to tasks where there was at least one frame of deviation before or after
 for (i in 1:5) {
   print(ggplot(data = wideform_task_matrix %>% filter(Drive == i) %>% filter(Deviation_frames_prop_Post_Press != 0 | Deviation_frames_prop_Pre_Press != 0), aes(x = Deviation_Frames_Prop_Diff)) +
@@ -320,7 +323,7 @@ for (i in 1:5) {
 
 ## Plots of trends across individuals
 
-```{r Plots of trends across individuals}
+```{r Plots of trends across individuals, eval = MAKE_PLOTS}
 # Right pupil diameter
 for (i in 1:5) {
   print(ggplot(data = filter(non_aug, Drive == i) %>%
@@ -335,7 +338,7 @@ for (i in 1:5) {
 
 ## Box plots to compare pre & post tasks
 
-```{r Box Plots for task matrix}
+```{r Box Plots for task matrix, eval = MAKE_PLOTS}
 
 plot_data <- task_matrix %>%
   mutate(Pupil_Avg = (LPupil_Diameter_mean + RPupil_Diameter_mean) / 2) %>%
@@ -353,7 +356,7 @@ ggplot(plot_data, aes(x = Phase, y = Pupil_Avg)) +
 
 ## Plots of trends around button presses
 
-```{r Plots of trends around button presses}
+```{r Plots of trends around button presses, eval = MAKE_PLOTS}
 # Create a list of filtered data frames
 obs_around_press <- bind_rows(lapply(c(left_button_press_indices, right_button_press_indices), function(press) {
   non_aug[seq(press - 180, min(press + 179, nrow(non_aug))), ] %>% mutate(Press_Frame = press, Frame_in_Segment = X - press + 181)
