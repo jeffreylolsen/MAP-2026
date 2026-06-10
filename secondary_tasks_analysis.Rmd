@@ -240,6 +240,7 @@ task_matrix <- task_windows_with_control %>%
     Deviation_frames_prop = sum(abs(Vehicle_Lat_Dev) > Road_Width / lat_dev_sens) / n(),
     BAC = Start_BAC[1],
     KSS = KSS_Score[1],
+    Blink_Count = max(Blink_Counter) - min(Blink_Counter),
     .groups = "drop"
   )
 rm(task_windows_with_control)
