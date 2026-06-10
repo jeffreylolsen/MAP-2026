@@ -241,6 +241,8 @@ task_matrix <- task_windows_with_control %>%
     BAC = Start_BAC[1],
     KSS = KSS_Score[1],
     Blink_Count = max(Blink_Counter) - min(Blink_Counter),
+    # Per close is the proportion that **both eyes are closed simultaneously**
+    Per_Close = mean(Blinking, na.rm = TRUE),
     .groups = "drop"
   )
 rm(task_windows_with_control)
