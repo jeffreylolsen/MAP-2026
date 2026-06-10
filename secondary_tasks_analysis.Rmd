@@ -314,6 +314,7 @@ for (i in 1:5) {
     labs(title = glue("Drive {i}")))
 }
 ```
+## Data Visualisations to compare Control, Pre, Post for predictors of interest
 
 ## Plots of trends across individuals
 
@@ -327,6 +328,22 @@ for (i in 1:5) {
     theme(legend.position = "NONE") +
     labs(title = glue("Drive {i}")))
 }
+```
+
+```{r Box Plots for task matrix}
+
+plot_data <- task_matrix %>%
+  mutate(Pupil_Avg = (LPupil_Diameter_mean + RPupil_Diameter_mean) / 2) %>%
+  filter(Button != "None") %>%
+  mutate(Phase = factor(Phase, levels = c("Pre_Press", "Post_Press"))) %>%
+  filter(!is.na(Pupil_Avg))
+
+ggplot(plot_data, aes(x = Phase, y = Pupil_Avg)) + 
+  geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
+  facet_wrap(~ Button) +
+  theme_minimal() +
+  labs(title = "Pupil Dilation: Anticipation vs Reaction")
+  
 ```
 
 
