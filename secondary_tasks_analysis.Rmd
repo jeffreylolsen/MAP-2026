@@ -456,6 +456,23 @@ ggplot(plot_data, aes(x = Phase, y = Pupil_Avg)) +
   theme_minimal() +
   labs(title = "Pupil Dilation: Anticipation vs Reaction")
 ```
+## Adjust pupil diameter for decrease over time
+
+```{r Adjust pupil diameter for decrease over time}
+non_aug$Frame_Num_scaled <- scale(non_aug$Frame_Num)
+print(summary(pup_time_model <- lmer(
+  data = non_aug,
+  RPupil_Diameter ~ Frame_Num_scaled + (1 + Frame_Num_scaled | Subject)
+)))
+
+non_aug$RPupil_Diameter_timeadj <- non_aug$RPupil_Diameter - predict(pup_time_model, newdata = non_aug, re.form = NA) + predict(pup_time_model, newdata = data.frame(Frame_Num_scaled = non_aug[1, "Frame_Num_scaled"]), re.form = NA)
+plot(pup_time_model, which = 1)
+
+non_aug$Frame_Num_scaled <- NULL
+```
+This fails regression assumptions because of the pupil dilation occurring
+at the beginning of each drive.
+We'll have to consider if it makes sense to model this differently
 
 ## Plots of trends around button presses
 
@@ -488,7 +505,7 @@ plot_eyes_around_task <- function(subject, drive) {
       color = factor(Press_Frame)
     )
   ) +
-    geom_line(size = 0.1) +
+    geom_line(linewidth = 0.1) +
     theme(legend.position = "NONE") +
     geom_vline(xintercept = 0, linewidth = 1) +
     labs(
@@ -504,25 +521,24 @@ for (i in 1:5) {
 }
 ```
 
-
 ```{r}
 eye_kss <- non_aug %>%
   mutate(Pupil_Avg = (LPupil_Diameter + RPupil_Diameter) / 2) %>%
   filter(!is.na(Pupil_Avg) & !is.na(KSS_Score))
 ```
 
-
 ```{r Eye Metric KSS plot, eval = MAKE_PLOTS}
- for (i in 1:5) {
-   print(ggplot(data = filter(eye_kss, Drive == i),
-                aes(x = Frame_Num, y = Pupil_Avg))+
-           geom_smooth(aes(group = Subject, color = KSS_Score),
-                       linewidth = 0.3, se = FALSE,
-                       method = "bam", formula = y ~ s(x, bs = "cs")) +
-           scale_color_viridis_c(name = "KSS", direction = -1) +
-           theme(legend.position = "bottom") +
-           labs(title = glue("Drive {i}")))
- }
-
+for (i in 1:5) {
+  print(ggplot(
+    data = filter(eye_kss, Drive == i),
+    aes(x = Frame_Num, y = Pupil_Avg)
+  ) +
+    geom_smooth(aes(group = Subject, color = KSS_Score),
+      linewidth = 0.3, se = FALSE,
+      method = "bam", formula = y ~ s(x, bs = "cs")
+    ) +
+    scale_color_viridis_c(name = "KSS", direction = -1) +
+    theme(legend.position = "bottom") +
+    labs(title = glue("Drive {i}")))
+}
 ```
-
