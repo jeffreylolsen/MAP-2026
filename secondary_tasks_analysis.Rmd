@@ -19,7 +19,7 @@ library(arrow)
 library(glue)
 library(mgcv)
 
-MAKE_PLOTS = FALSE
+MAKE_PLOTS <- FALSE
 ```
 
 ## Read in DMS data
@@ -339,19 +339,17 @@ for (i in 1:5) {
 ## Box plots to compare pre & post tasks
 
 ```{r Box Plots for task matrix, eval = MAKE_PLOTS}
-
 plot_data <- task_matrix %>%
   mutate(Pupil_Avg = (LPupil_Diameter_mean + RPupil_Diameter_mean) / 2) %>%
   filter(Button != "None") %>%
   mutate(Phase = factor(Phase, levels = c("Pre_Press", "Post_Press"))) %>%
   filter(!is.na(Pupil_Avg))
 
-ggplot(plot_data, aes(x = Phase, y = Pupil_Avg)) + 
+ggplot(plot_data, aes(x = Phase, y = Pupil_Avg)) +
   geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
-  facet_wrap(~ Button) +
+  facet_wrap(~Button) +
   theme_minimal() +
   labs(title = "Pupil Dilation: Anticipation vs Reaction")
-  
 ```
 
 ## Plots of trends around button presses
