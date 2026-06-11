@@ -272,6 +272,9 @@ task_matrix <- task_windows_with_control %>%
     Blink_Count = max(Blink_Counter) - min(Blink_Counter),
     # Per close is the proportion that **both eyes are closed simultaneously**
     Per_Close = mean(Blinking, na.rm = TRUE),
+    Lat_Dev_SD = sd(Vehicle_Lat_Dev, na.rm = TRUE),
+    Speed_SD = sd(Vehicle_Speed, na.rm = TRUE),
+    Braking_Events = sum(lag(Brake_Pedal_Force) == 0 & Brake_Pedal_Force > 0),
     .groups = "drop"
   )
 rm(task_windows_with_control)
