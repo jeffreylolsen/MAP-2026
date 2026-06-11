@@ -274,7 +274,7 @@ task_matrix <- task_windows_with_control %>%
     Per_Close = mean(Blinking, na.rm = TRUE),
     Lat_Dev_SD = sd(Vehicle_Lat_Dev, na.rm = TRUE),
     Speed_SD = sd(Vehicle_Speed, na.rm = TRUE),
-    Braking_Events = sum(lag(Brake_Pedal_Force) == 0 & Brake_Pedal_Force > 0),
+    Braking_Events = sum(lag(Brake_Pedal_Force) == 0 & Brake_Pedal_Force > 0,  na.rm = TRUE),
     .groups = "drop"
   )
 rm(task_windows_with_control)
@@ -560,3 +560,43 @@ for (i in 1:5) {
     ylim(0, 6)
 }
 ```
+
+```{r Driving metrics by KSS and drive, fig.width = 12, fig.height = 5, eval = MAKE_PLOTS}
+
+driving_kss <- task_matrix %>%
+  filter(Phase == "Pre_Press") %>%
+  filter(!is.na(KSS)) %>%
+  group_by(KSS, Drive, Press_Frame) %>%
+  summarise(
+    Lat_Dev_SD = mean(Lat_Dev_SD, na.rm = TRUE),
+    Speed_SD = mean(Speed_SD, na.rm = TRUE),
+    Braking_Events = mean(Braking_Events,na.rm = TRUE),
+    Deviation_frames_prop = mean(Deviation_frames_prop, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  filter(!is.na(Lat_Dev_SD), !is.nan(Speed_SD))
+ 
+metrics <- list(
+  list(col = "Lat_Dev_SD", label = "SD of lateral position (m)"),
+  list(col = "Deviation_frames_prop", label = "Lane departure proportion"),
+  list(col = "Speed_SD",label = "SD of speed"),
+  list(col = "Braking_Events", label = "Braking events per window")
+)
+ 
+for (m in metrics) {
+  for (i in 1:5) {
+    print(ggplot(data = filter(driving_kss, Drive == i),
+                 aes(x = Press_Frame, y = .data[[m$col]],
+                     group = factor(KSS),
+                     color = as.numeric(KSS))) +
+      geom_smooth(linewidth = 0.3, se = FALSE,
+                  method = "bam", formula = y ~ s(x, bs = "cs", k = 4)) +
+      scale_color_viridis_c(name = "KSS", direction = -1) +
+      theme_minimal() +
+      theme(legend.position = "bottom") +
+      labs(title = glue("{m$label} — Drive {i}"),
+           x = "Press frame", y = m$label))
+  }
+}
+```
+ 
