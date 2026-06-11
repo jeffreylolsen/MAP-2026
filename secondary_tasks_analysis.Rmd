@@ -329,6 +329,12 @@ model2 <- lmer(Deviation_Frames_Prop_Diff ~ factor(Drive) + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model2)
+
+# Model testing the fixed effects of alcohol (BAC) and fatigue (KSS) on averaged bilateral pupil reactivity, controlling for individual baseline variance
+
+model3 <- lmer(Pupil_Diff_Avg ~ BAC + KSS + (1 | Subject),
+               data = wideform_task_matrix)
+summary(model3)
 ```
 
 ## Preliminary lane deviation analysis
