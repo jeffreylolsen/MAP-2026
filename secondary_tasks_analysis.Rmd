@@ -473,6 +473,7 @@ non_aug$Frame_Num_scaled <- NULL
 This fails regression assumptions because of the pupil dilation occurring
 at the beginning of each drive.
 We'll have to consider if it makes sense to model this differently
+or use raw values.
 
 ## Plots of trends around button presses
 
