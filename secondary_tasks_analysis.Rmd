@@ -522,24 +522,38 @@ for (i in 1:5) {
 }
 ```
 
-```{r}
+## Pupil diameter by KSS and drive
+
+```{r Pupil diameter by KSS and drive, fig.show = "hold", eval = MAKE_PLOTS}
 eye_kss <- non_aug %>%
   mutate(Pupil_Avg = (LPupil_Diameter + RPupil_Diameter) / 2) %>%
-  filter(!is.na(Pupil_Avg) & !is.na(KSS_Score))
-```
+  filter(!is.na(Pupil_Avg) & !is.na(KSS_Score)) %>%
+  select(KSS_Score, Frame_Num, Drive, Pupil_Avg) %>%
+  group_by(KSS_Score, Frame_Num, Drive) %>%
+  summarize(
+    Frame_Num = Frame_Num[1],
+    Pupil_Avg = mean(Pupil_Avg),
+    Drive = Drive[1],
+    .groups = "drop"
+  )
 
-```{r Eye Metric KSS plot, eval = MAKE_PLOTS}
 for (i in 1:5) {
   print(ggplot(
     data = filter(eye_kss, Drive == i),
-    aes(x = Frame_Num, y = Pupil_Avg)
+    aes(
+      x = Frame_Num,
+      y = Pupil_Avg,
+      group = factor(KSS_Score),
+      color = as.numeric(as.character(KSS_Score))
+    )
   ) +
-    geom_smooth(aes(group = Subject, color = KSS_Score),
+    geom_smooth(
       linewidth = 0.3, se = FALSE,
       method = "bam", formula = y ~ s(x, bs = "cs")
     ) +
-    scale_color_viridis_c(name = "KSS", direction = -1) +
     theme(legend.position = "bottom") +
-    labs(title = glue("Drive {i}")))
+    scale_color_viridis_c(name = "KSS", direction = -1) +
+    labs(title = glue("Drive {i}"))) +
+    ylim(0, 6)
 }
 ```
