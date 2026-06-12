@@ -53,6 +53,24 @@ model3 <- lmer(Pupil_Diff_Avg ~ BAC + KSS + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model3)
+
+# SDLP Model predicted by alcohol and fatigue
+
+model_sdlp <- lmer(Lat_Dev_SD_diff ~ BAC + KSS + (1 | Subject),
+                   data = wideform_task_matrix)
+summary(model_sdlp)
+
+# Speed_SD_Diff model predicted by alcohol and fatigue
+
+model_speed <- lmer(Speed_SD_diff ~ BAC + KSS + (1 | Subject),
+                    data = wideform_task_matrix)
+summary(model_speed)
+
+# Lane departure proportion difference (you already build this column)
+model_dev <- lmer(Deviation_Frames_Prop_Diff ~ BAC + KSS + (1 | Subject),
+                  data = wideform_task_matrix)
+summary(model_dev) 
+
 ```
 
 ## Preliminary lane deviation analysis

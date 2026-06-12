@@ -254,7 +254,16 @@ wideform_task_matrix <- task_matrix %>%
     ),
     Deviation_Frames_Prop_Diff = (
       Deviation_frames_prop_Post_Press - Deviation_frames_prop_Pre_Press
-    )
+    ),
+    Lat_Dev_SD_diff = (
+      Lat_Dev_SD_Post_Press - Lat_Dev_SD_Pre_Press
+      ),
+    Speed_SD_diff = (
+      Speed_SD_Post_Press - Speed_SD_Pre_Press
+      ),
+    Braking_diff = (
+     Braking_Events_Post_Press - Braking_Events_Pre_Press
+     ),
   )
 
 ### Write environment
