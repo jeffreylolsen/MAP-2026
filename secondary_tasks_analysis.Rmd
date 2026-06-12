@@ -131,36 +131,6 @@ non_aug[is.na(non_aug$Eye_Event), "Eye_Event"] <- "saccade"
 rm(non_saccades, indices, flattened_indices)
 ```
 
-## Debug high task button-press counts
-
-```{r Plot high counts to debug, fig.show = "hold", out.width = "50%", eval = MAKE_PLOTS}
-top_ten_left_press_runs <- head(
-  arrange(
-    output,
-    desc(Counted_Hits_Left + Counted_Hits_Right)
-  ),
-  10
-)$DaqName
-
-for (run in top_ten_left_press_runs) {
-  plot <- ggplot(
-    data = filter(non_aug, DaqName == run),
-    aes(
-      x = Frame_Num,
-      y = Correct_Left_Button_Press
-    )
-  ) +
-    geom_point() +
-    labs(
-      title = run,
-      x = "Frame",
-      y = "Button press"
-    )
-  print(plot)
-  rm(plot)
-}
-```
-
 ## Aggregate matrix
 
 ```{r Aggregate Matrix}
