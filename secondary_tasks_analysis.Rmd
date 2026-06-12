@@ -12,10 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(dplyr)
-library(readxl)
-library(saccades)
 library(lme4)
-library(arrow)
 library(glue)
 library(mgcv)
 library(data.table)
@@ -25,7 +22,7 @@ MAKE_PLOTS <- TRUE
 ```
 
 ```{r Read in data, include=FALSE}
-setwd(this.path::this.dir())
+setwd(this.dir())
 
 if (file.mtime("./data/processed_data.RData") <
   file.mtime("./data_processing.R")) {

@@ -2,17 +2,14 @@ library(tidyverse)
 library(dplyr)
 library(readxl)
 library(saccades)
-library(lme4)
 library(arrow)
-library(glue)
-library(mgcv)
 library(data.table)
 library(this.path)
 
 ### Read in DMS data
 
 # Load in data
-setwd(this.path::this.dir())
+setwd(this.dir())
 non_aug <- read_feather("./data/non_aug_data.feather")
 
 # Replace repeated button-press observations with zeros
