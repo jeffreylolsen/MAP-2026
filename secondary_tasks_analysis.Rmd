@@ -30,9 +30,9 @@ setwd(this.path::this.dir())
 if (file.mtime("./data/processed_data.RData") <
   file.mtime("./data_processing.R")) {
   source("./data_processing.R")
+} else {
+  load("./data/processed_data.RData")
 }
-
-load("./data/processed_data.RData")
 ```
 
 ## Models
