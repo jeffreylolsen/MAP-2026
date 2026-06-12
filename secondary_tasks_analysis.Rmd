@@ -33,12 +33,14 @@ non_aug <- read_feather("./data/non_aug_data.feather")
 non_aug <- non_aug %>%
   group_by(rleid(Task_Available)) %>%
   mutate(
+    # Correct button press is first frame pressed within task window
     Correct_Left_Button_Press = case_when(
       Left_Button_Press == 1 &
         !duplicated(Left_Button_Press) &
         Task_Available %in% c("Left", "Right") ~ 1,
       TRUE ~ 0
     ),
+    # Left button press is any press that is not holding an ongoing press
     Left_Button_Press = case_when(
       (Left_Button_Press == lag(Left_Button_Press)) &
         (Left_Button_Press == 1) |
@@ -162,10 +164,12 @@ for (run in top_ten_left_press_runs) {
 ## Aggregate matrix
 
 ```{r Aggregate Matrix}
-# Long-form wrt pre/post pairs
+non_aug <- non_aug %>%
+  group_by(consecutive_id(Task_Available)) %>%
+  mutate(Task_Start_X = first(X)) %>%
+  ungroup()
 
-# 60 fps * 3 seconds =  180 Frames per window
-time_frame <- 180
+# Long-form wrt pre/post pairs
 
 # Sensitivity of lateral deviation
 lat_dev_sens <- 4
@@ -179,7 +183,8 @@ press_events <- non_aug %>%
     Drive,
     X,
     Frame_Num,
-    Left_Button_Press
+    Left_Button_Press,
+    Task_Start_X,
   )
 
 # Window of frames around each press
@@ -192,12 +197,12 @@ task_windows <- press_events %>%
     # Want the frame number within the run of the simulator
     Press_Frame = Frame_Num,
     Frame = c(
-      (X - time_frame):(X - 1),
-      X:(X + time_frame - 1)
+      Task_Start_X:(X - 1),
+      X:(2 * X - Task_Start_X - 1)
     ), # Include frame of press since press occurred before recording
     Phase = c(
-      rep("Pre_Press", time_frame),
-      rep("Post_Press", time_frame)
+      rep("Pre_Press", X - Task_Start_X),
+      rep("Post_Press", X - Task_Start_X)
     )
   )
 
@@ -206,13 +211,13 @@ task_boundaries <- task_windows %>%
   group_by(DaqName, Subject, Drive, Press_Frame) %>%
   summarise(
     Task_Start_X = min(Frame),
-    Task_End_X = max(Frame),
+    Segment_Length = n() / 2,
     .groups = "drop"
   ) %>%
   arrange(DaqName, Task_Start_X) %>%
   group_by(DaqName) %>%
   mutate(
-    Control_Start = lag(Task_End_X) + 1,
+    Control_Start = Task_Start_X - Segment_Length,
     Control_End = Task_Start_X - 1
   ) %>%
   ungroup() %>%
@@ -233,7 +238,12 @@ rm(task_boundaries)
 
 # Combine with original Pre/Post task windows with the new control windows
 all_windows <- bind_rows(task_windows, control_windows) %>%
-  arrange(DaqName, Frame)
+  arrange(DaqName, Frame) %>%
+  mutate(Phase = factor(Phase, levels = c(
+    "Control",
+    "Pre_Press",
+    "Post_Press"
+  )))
 rm(control_windows, task_windows)
 
 # Pull in raw eye data for ALL windows (Tasks and Controls)
@@ -263,6 +273,7 @@ task_matrix <- task_windows_with_control %>%
     Lat_Dev_SD = sd(Vehicle_Lat_Dev, na.rm = TRUE),
     Speed_SD = sd(Vehicle_Speed, na.rm = TRUE),
     Braking_Events = sum(lag(Brake_Pedal_Force) == 0 & Brake_Pedal_Force > 0, na.rm = TRUE),
+    Reaction_Frames = n(),
     .groups = "drop"
   )
 rm(task_windows_with_control)
@@ -318,7 +329,8 @@ summary(model2)
 # Model testing the fixed effects of alcohol (BAC) and fatigue (KSS) on averaged bilateral pupil reactivity, controlling for individual baseline variance
 
 model3 <- lmer(Pupil_Diff_Avg ~ BAC + KSS + (1 | Subject),
-               data = wideform_task_matrix)
+  data = wideform_task_matrix
+)
 summary(model3)
 ```
 
@@ -420,10 +432,13 @@ for (i in 1:5) {
 ```{r Plots of trends across individuals, fig.show = "hold", eval = MAKE_PLOTS}
 # Right pupil diameter
 for (i in 1:5) {
-  print(ggplot(data = filter(non_aug, Drive == i) %>%
-    group_by(Subject, Drive, Frame_Num) %>%
-    mutate(RPupil_Diameter = mean(RPupil_Diameter, na.rm = TRUE)) %>%
-    ungroup(), aes(x = Frame_Num, y = RPupil_Diameter, color = Subject)) +
+  print(ggplot(
+    data = filter(non_aug, Drive == i) %>%
+      group_by(Subject, Drive, Frame_Num) %>%
+      mutate(RPupil_Diameter = mean(RPupil_Diameter, na.rm = TRUE)) %>%
+      ungroup(),
+    aes(x = Frame_Num, y = RPupil_Diameter, color = Subject)
+  ) +
     geom_smooth(
       linewidth = 0.1,
       se = FALSE,
@@ -449,24 +464,6 @@ ggplot(plot_data, aes(x = Phase, y = Pupil_Avg)) +
   theme_minimal() +
   labs(title = "Pupil Dilation: Anticipation vs Reaction")
 ```
-## Adjust pupil diameter for decrease over time
-
-```{r Adjust pupil diameter for decrease over time}
-non_aug$Frame_Num_scaled <- scale(non_aug$Frame_Num)
-print(summary(pup_time_model <- lmer(
-  data = non_aug,
-  RPupil_Diameter ~ Frame_Num_scaled + (1 + Frame_Num_scaled | Subject)
-)))
-
-non_aug$RPupil_Diameter_timeadj <- non_aug$RPupil_Diameter - predict(pup_time_model, newdata = non_aug, re.form = NA) + predict(pup_time_model, newdata = data.frame(Frame_Num_scaled = non_aug[1, "Frame_Num_scaled"]), re.form = NA)
-plot(pup_time_model, which = 1)
-
-non_aug$Frame_Num_scaled <- NULL
-```
-This fails regression assumptions because of the pupil dilation occurring
-at the beginning of each drive.
-We'll have to consider if it makes sense to model this differently
-or use raw values.
 
 ## Plots of trends around button presses
 
