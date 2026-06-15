@@ -43,6 +43,10 @@ non_aug <- non_aug %>%
   mutate(Frame_Num = row_number(), .after = X) %>%
   ungroup()
 
+# Add average pupil size of both eyes
+non_aug$Avg_Pupil_Diameter <- (non_aug$RPupil_Diameter +
+  non_aug$LPupil_Diameter) / 2
+
 # Get `ST_*` columns
 
 output <- read_excel("./data/output_IIHS_withDMS.xls") %>%
@@ -209,6 +213,7 @@ task_matrix <- task_windows_with_control %>%
   summarise(
     LPupil_Diameter_mean = mean(LPupil_Diameter, na.rm = TRUE),
     RPupil_Diameter_mean = mean(RPupil_Diameter, na.rm = TRUE),
+    Avg_Pupil_Diameter_mean = mean(Avg_Pupil_Diameter, na.rm = TRUE),
     Gaze_Pitch_mean = mean(Gaze_Pitch, na.rm = TRUE),
     Gaze_Yaw_mean = mean(Gaze_Yaw, na.rm = TRUE),
     Deviation_frames_prop = sum(
@@ -241,8 +246,11 @@ wideform_task_matrix <- task_matrix %>%
     )
   ) %>%
   mutate(
+    Avg_Pupil_Diameter_mean_diff = (
+      Avg_Pupil_Diameter_mean_Post_Press - Avg_Pupil_Diameter_mean_Pre_Press
+    ),
     RPupil_Diameter_mean_diff = (
-      RPupil_Diameter_mean_Post_Press + RPupil_Diameter_mean_Pre_Press
+      RPupil_Diameter_mean_Post_Press - RPupil_Diameter_mean_Pre_Press
     ),
     LPupil_Diameter_mean_diff = (
       LPupil_Diameter_mean_Post_Press - LPupil_Diameter_mean_Pre_Press
@@ -252,9 +260,6 @@ wideform_task_matrix <- task_matrix %>%
     ),
     Gaze_Pitch_mean_diff = (
       Gaze_Pitch_mean_Post_Press - Gaze_Pitch_mean_Pre_Press
-    ),
-    Pupil_Diff_Avg = (
-      (RPupil_Diameter_mean_diff + LPupil_Diameter_mean_diff) / 2
     ),
     Deviation_Frames_Prop_Diff = (
       Deviation_frames_prop_Post_Press - Deviation_frames_prop_Pre_Press

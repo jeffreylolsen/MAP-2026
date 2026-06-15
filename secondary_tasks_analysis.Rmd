@@ -36,7 +36,7 @@ if (file.mtime("./data/processed_data.RData") <
 ## Models
 
 ```{r Models}
-model_combined <- lmer(Pupil_Diff_Avg ~ factor(Drive) + (1 | Subject),
+model_combined <- lmer(Avg_Pupil_Diameter_mean_diff ~ factor(Drive) + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model_combined)
@@ -50,7 +50,7 @@ summary(model2)
 
 # Model testing the fixed effects of alcohol (BAC) and fatigue (KSS) on averaged bilateral pupil reactivity, controlling for individual baseline variance
 
-model3 <- lmer(Pupil_Diff_Avg ~ BAC + KSS + (1 | Subject),
+model3 <- lmer(Avg_Pupil_Diameter_mean_diff ~ BAC + KSS + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model3)
@@ -175,14 +175,14 @@ for (i in 1:5) {
 ## Plots of trends across individuals
 
 ```{r Plots of trends across individuals, fig.show = "hold", eval = MAKE_PLOTS}
-# Right pupil diameter
+# Average pupil diameter
 for (i in 1:5) {
   print(ggplot(
     data = filter(non_aug, Drive == i) %>%
       group_by(Subject, Drive, Frame_Num) %>%
-      mutate(RPupil_Diameter = mean(RPupil_Diameter, na.rm = TRUE)) %>%
+      mutate(Avg_Pupil_Diameter_mean = mean(Avg_Pupil_Diameter, na.rm = TRUE)) %>%
       ungroup(),
-    aes(x = Frame_Num, y = RPupil_Diameter, color = Subject)
+    aes(x = Frame_Num, y = Avg_Pupil_Diameter_mean, color = Subject)
   ) +
     geom_smooth(
       linewidth = 0.1,
@@ -199,12 +199,11 @@ for (i in 1:5) {
 
 ```{r Box Plots for task matrix, eval = MAKE_PLOTS}
 plot_data <- task_matrix %>%
-  mutate(Pupil_Avg = (LPupil_Diameter_mean + RPupil_Diameter_mean) / 2) %>%
   filter(Phase != "Control") %>%
   mutate(Phase = factor(Phase, levels = c("Pre_Press", "Post_Press"))) %>%
-  filter(!is.na(Pupil_Avg))
+  filter(!is.na(Avg_Pupil_Diameter_mean))
 
-ggplot(plot_data, aes(x = Phase, y = Pupil_Avg)) +
+ggplot(plot_data, aes(x = Phase, y = Avg_Pupil_Diameter_mean)) +
   geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
   theme_minimal() +
   labs(title = "Pupil Dilation: Anticipation vs Reaction")
@@ -245,7 +244,7 @@ plot_eyes_around_task <- function(subject, drive) {
     ),
     aes(
       x = Adj_Frame_in_Segment,
-      y = RPupil_Diameter,
+      y = Avg_Pupil_Diameter,
       color = factor(Press_Frame)
     )
   ) +
@@ -255,7 +254,7 @@ plot_eyes_around_task <- function(subject, drive) {
     labs(
       title = glue("All button presses: Subject {subject}, Drive {drive}"),
       x = "Time (relative to press)",
-      y = "Right pupil diameter (mm)"
+      y = "Average pupil diameter (mm)"
     ) +
     ylim(0, 6)
 }
@@ -271,14 +270,11 @@ change faster/slower proportional to the task reaction time.
 
 ```{r Pupil diameter by KSS and drive, fig.show = "hold", eval = MAKE_PLOTS}
 eye_kss <- non_aug %>%
-  mutate(Pupil_Avg = (LPupil_Diameter + RPupil_Diameter) / 2) %>%
-  filter(!is.na(Pupil_Avg) & !is.na(KSS_Score)) %>%
-  select(KSS_Score, Frame_Num, Drive, Pupil_Avg) %>%
+  filter(!is.na(Avg_Pupil_Diameter) & !is.na(KSS_Score)) %>%
+  select(KSS_Score, Frame_Num, Drive, Avg_Pupil_Diameter) %>%
   group_by(KSS_Score, Frame_Num, Drive) %>%
   summarize(
-    Frame_Num = Frame_Num[1],
-    Pupil_Avg = mean(Pupil_Avg),
-    Drive = Drive[1],
+    Avg_Pupil_Diameter = mean(Avg_Pupil_Diameter),
     .groups = "drop"
   )
 
@@ -287,7 +283,7 @@ for (i in 1:5) {
     data = filter(eye_kss, Drive == i),
     aes(
       x = Frame_Num,
-      y = Pupil_Avg,
+      y = Avg_Pupil_Diameter,
       group = factor(KSS_Score),
       color = as.numeric(as.character(KSS_Score))
     )
@@ -314,12 +310,9 @@ ggplot(
         10
       )
     ) %>%
-    group_by(Subject, Drive) %>%
+    group_by(Subject, Drive, KSS) %>%
     summarize(
       Reaction_Time = mean(Reaction_Frames) * (1000 / 60),
-      KSS = KSS[1],
-      Subject = Subject[1],
-      Drive = Drive[1],
       .groups = "drop"
     ),
   aes(x = Drive, y = Reaction_Time, group = Subject)
@@ -380,7 +373,7 @@ for (m in metrics) {
 
 ## Zero-inflated poisson model for saccades
 
-```{r Saccade Zero Inflation}
+```{r Saccade Zero Inflation, out.width = "100%", eval = MAKE_PLOTS}
 task_matrix %>%
   group_by(Phase) %>%
   summarise(
