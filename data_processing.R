@@ -33,6 +33,7 @@ non_aug <- non_aug %>%
     )
   ) %>%
   ungroup()
+non_aug$`rleid(Task_Available)` <- NULL
 
 # Replace coded 99 values from python script with NA values
 non_aug[non_aug == 99] <- NA
@@ -129,6 +130,7 @@ non_aug <- non_aug %>%
   group_by(consecutive_id(Task_Available)) %>%
   mutate(Task_Start_X = first(X)) %>%
   ungroup()
+non_aug$`consecutive_id(Task_Available)` <- NULL
 
 # Long-form wrt pre/post pairs
 
@@ -184,6 +186,7 @@ task_boundaries <- task_windows %>%
   ) %>%
   ungroup() %>%
   filter(!is.na(Control_Start) & Control_End >= Control_Start)
+non_aug$Task_Start_X <- NULL
 
 # Expand these boundaries into actual individual frame rows
 control_windows <- task_boundaries %>%
