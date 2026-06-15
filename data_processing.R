@@ -53,7 +53,7 @@ non_aug <- non_aug %>%
   group_by(DaqName) %>%
   mutate(Vehicle_Lat_Dev_rolling_sd3 = runner(
     Vehicle_Lat_Dev, sd,
-    k = 180, na_pad = FALSE
+    k = 180, na_pad = FALSE, na.rm = TRUE
   )) %>%
   ungroup()
 
