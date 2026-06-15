@@ -5,6 +5,7 @@ library(saccades)
 library(arrow)
 library(data.table)
 library(this.path)
+library(runner)
 
 ### Read in DMS data
 
@@ -46,6 +47,15 @@ non_aug <- non_aug %>%
 # Add average pupil size of both eyes
 non_aug$Avg_Pupil_Diameter <- (non_aug$RPupil_Diameter +
   non_aug$LPupil_Diameter) / 2
+
+# Rolling SD of vehicle lateral deviation
+non_aug <- non_aug %>%
+  group_by(DaqName) %>%
+  mutate(Vehicle_Lat_Dev_rolling_sd3 = runner(
+    Vehicle_Lat_Dev, sd,
+    k = 180, na_pad = FALSE
+  )) %>%
+  ungroup()
 
 # Get `ST_*` columns
 
