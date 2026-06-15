@@ -88,6 +88,7 @@ non_saccades <- detect.fixations(
     ) %>%
     rename(
       trial = DaqName,
+      x = Gaze_Yaw,
       y = Gaze_Pitch,
       time = X
     ),
@@ -222,9 +223,8 @@ task_matrix <- task_windows_with_control %>%
     Speed_SD = sd(Vehicle_Speed, na.rm = TRUE),
     Braking_Events = sum(lag(Brake_Pedal_Force) == 0 & Brake_Pedal_Force > 0, na.rm = TRUE),
     Reaction_Frames = n(),
-    Saccade_Count = sum(Eye_Event == "saccade" & lag(Eye_Event) != "saccade", na.rm = TRUE ),
+    Saccade_Count = sum(Eye_Event == "saccade" & lag(Eye_Event) != "saccade", na.rm = TRUE),
     Saccade_Prop = mean(Eye_Event == "saccade", na.rm = TRUE),
-    Saccade_Rate_Per_Frame = sum(Eye_Event == "saccade", na.rm = TRUE) / n(),
     .groups = "drop"
   )
 rm(task_windows_with_control)
