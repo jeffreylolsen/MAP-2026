@@ -394,8 +394,21 @@ model_saccade_zip <- glmmTMB(
 
 summary(model_saccade_zip)
 ```
-When saccades did occur, neither task phase nor alcohol level significantly changed how many there were
-though fatigue showed a weak trending effect. However, alcohol strongly predicted whether a driver entered 
-a complete zero-saccade state, meaning drunk drivers were more likely to stop visual scanning altogether rather 
-than just scan differently. Post-press, drivers were significantly less likely to be in this frozen state, 
-suggesting the act of responding to the task briefly re-engaged their visual scanning behavior.
+
+
+```{r Visualization for zero-saccade windows by Drive}
+
+task_matrix %>%
+  mutate(Zero_Saccade = Saccade_Count == 0) %>%
+  group_by(Drive, Phase) %>%
+  summarise(
+    Prop_Zero = mean(Zero_Saccade),
+    SE = sd(Zero_Saccade) / sqrt(n()),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(x = factor(Drive), y = Prop_Zero, fill = Phase)) +
+  geom_col(position = "dodge") +
+  theme_minimal()
+
+```
+
