@@ -143,6 +143,7 @@ task_windows <- press_events %>%
     Drive = Drive,
     # Want the frame number within the run of the simulator
     Press_Frame = Frame_Num,
+    Frame_Index = X,
     Frame = c(
       Task_Start_X:(X - 1),
       X:(2 * X - Task_Start_X - 1)
@@ -155,7 +156,7 @@ task_windows <- press_events %>%
 
 # Find the boundaries of every task block per Daq run
 task_boundaries <- task_windows %>%
-  group_by(DaqName, Subject, Drive, Press_Frame) %>%
+  group_by(DaqName, Subject, Drive, Press_Frame, Frame_Index) %>%
   summarise(
     Task_Start_X = min(Frame),
     Segment_Length = n() / 2,
@@ -178,6 +179,7 @@ control_windows <- task_boundaries %>%
     Subject = Subject,
     Drive = Drive,
     Press_Frame = Press_Frame, # Linking it to the upcoming press
+    Frame_Index = Frame_Index,
     Frame = Control_Start:Control_End,
     Phase = "Control"
   )
@@ -203,7 +205,7 @@ rm(all_windows)
 
 # Aggregate into one row per window with the control phases
 task_matrix <- task_windows_with_control %>%
-  group_by(DaqName, Subject, Drive, Press_Frame, Phase) %>%
+  group_by(DaqName, Subject, Drive, Press_Frame, Frame_Index, Phase) %>%
   summarise(
     LPupil_Diameter_mean = mean(LPupil_Diameter, na.rm = TRUE),
     RPupil_Diameter_mean = mean(RPupil_Diameter, na.rm = TRUE),
@@ -257,13 +259,13 @@ wideform_task_matrix <- task_matrix %>%
     ),
     Lat_Dev_SD_diff = (
       Lat_Dev_SD_Post_Press - Lat_Dev_SD_Pre_Press
-      ),
+    ),
     Speed_SD_diff = (
       Speed_SD_Post_Press - Speed_SD_Pre_Press
-      ),
-    Braking_diff = (
-     Braking_Events_Post_Press - Braking_Events_Pre_Press
-     ),
+    ),
+    Braking_Events_diff = (
+      Braking_Events_Post_Press - Braking_Events_Pre_Press
+    ),
   )
 
 ### Write environment

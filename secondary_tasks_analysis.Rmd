@@ -57,20 +57,25 @@ summary(model3)
 # SDLP Model predicted by alcohol and fatigue
 
 model_sdlp <- lmer(Lat_Dev_SD_diff ~ BAC + KSS + (1 | Subject),
-                   data = wideform_task_matrix)
+  data = wideform_task_matrix
+)
 summary(model_sdlp)
 
 # Speed_SD_Diff model predicted by alcohol and fatigue
 
 model_speed <- lmer(Speed_SD_diff ~ BAC + KSS + (1 | Subject),
-                    data = wideform_task_matrix)
+  data = wideform_task_matrix
+)
 summary(model_speed)
 
 # Lane departure proportion difference (you already build this column)
 model_dev <- lmer(Deviation_Frames_Prop_Diff ~ BAC + KSS + (1 | Subject),
-                  data = wideform_task_matrix)
-summary(model_dev) 
+  data = wideform_task_matrix
+)
+summary(model_dev)
 
+print(t.test(wideform_task_matrix$Lat_Dev_SD_Post_Press - wideform_task_matrix$Lat_Dev_SD_Pre_Press))
+print(t.test(wideform_task_matrix$Speed_SD_Post_Press - wideform_task_matrix$Speed_SD_Pre_Press))
 ```
 
 ## Preliminary lane deviation analysis
@@ -212,12 +217,20 @@ left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X
 
 # Create a list of filtered data frames
 obs_around_press <- bind_rows(lapply(
-  left_button_press_indices,
+  unique(task_matrix$Frame_Index),
   function(press) {
-    non_aug[seq(press - 180, min(press + 179, nrow(non_aug))), ] %>%
+    frames_in_segment <- filter(task_matrix, Frame_Index == press)[[1, "Reaction_Frames"]]
+
+    non_aug[seq(
+      press - frames_in_segment,
+      press + frames_in_segment - 1
+    ), ] %>%
       mutate(
         Press_Frame = press,
-        Frame_in_Segment = X - press + 181
+        Frame_in_Segment = X - press + frames_in_segment + 1,
+        Adj_Frame_in_Segment = -100 +
+          (((Frame_in_Segment - min(Frame_in_Segment)) * 200) /
+            (max(Frame_in_Segment) - min(Frame_in_Segment)))
       )
   }
 ))
@@ -230,7 +243,7 @@ plot_eyes_around_task <- function(subject, drive) {
       Drive == drive
     ),
     aes(
-      x = Frame_in_Segment - 180,
+      x = Adj_Frame_in_Segment,
       y = RPupil_Diameter,
       color = factor(Press_Frame)
     )
@@ -240,7 +253,7 @@ plot_eyes_around_task <- function(subject, drive) {
     geom_vline(xintercept = 0, linewidth = 1) +
     labs(
       title = glue("All button presses: Subject {subject}, Drive {drive}"),
-      x = "Frame (relative to press)",
+      x = "Time (relative to press)",
       y = "Right pupil diameter (mm)"
     ) +
     ylim(0, 6)
@@ -250,6 +263,8 @@ for (i in 1:5) {
   print(plot_eyes_around_task(1, i))
 }
 ```
+Interpretability relies on the assumption that trends in eye metrics
+change faster/slower proportional to the task reaction time.
 
 ## Pupil diameter by KSS and drive
 
@@ -286,6 +301,35 @@ for (i in 1:5) {
     ylim(0, 6)
 }
 ```
+
+## Reaction time by subject, drive, KSS
+
+```{r "Reaction time by subject, drive, KSS", eval = MAKE_PLOTS}
+ggplot(
+  data = task_matrix %>%
+    filter(
+      as.numeric(Subject) %in% sample(
+        unique(task_matrix$Subject),
+        10
+      )
+    ) %>%
+    group_by(Subject, Drive) %>%
+    summarize(
+      Reaction_Time = mean(Reaction_Frames) * (1000 / 60),
+      KSS = KSS[1],
+      Subject = Subject[1],
+      Drive = Drive[1],
+      .groups = "drop"
+    ),
+  aes(x = Drive, y = Reaction_Time, group = Subject)
+) +
+  geom_point(aes(color = KSS), size = 3) +
+  geom_line()
+```
+Currently samples 10 drivers. In the future we could group them by
+some trait and aggregate across drivers within groups.
+
+## Driving metrics by KSS and drive
 
 ```{r Driving metrics by KSS and drive, fig.width = 12, fig.height = 5, fig.show = "hold", eval = MAKE_PLOTS}
 driving_kss <- task_matrix %>%
