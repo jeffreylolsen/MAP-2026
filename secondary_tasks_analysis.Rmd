@@ -406,7 +406,7 @@ task_matrix %>%
     median_count = median(Saccade_Count)
   )
 ggplot(task_matrix, aes(x = Saccade_Count)) +
-  geom_histogram(bindwidth = 1) +
+  geom_histogram(binwidth = 0.5)+
   facet_wrap(~Phase)
 
 model_saccade_zip <- glmmTMB(
@@ -432,3 +432,29 @@ task_matrix %>%
   geom_col(position = "dodge") +
   theme_minimal()
 ```
+```{r Pre press Driving Stability and Reaction Time Plot and model}
+#| out.width = "100%"
+
+model_rt_driving <- lmer(
+  Reaction_Frames_Pre_Press ~ Lat_Dev_SD_Pre_Press + Speed_SD_Pre_Press + BAC + KSS + (1 | Subject),
+  data = wideform_task_matrix
+)
+summary(model_rt_driving) 
+
+wideform_task_matrix %>%
+  drop_na(Lat_Dev_SD_Pre_Press, Reaction_Frames_Pre_Press, Drive, KSS) %>%
+  mutate(Drive = factor(Drive, labels = c("Drive 1", "Drive 2", "Drive 3", "Drive 4", "Drive 5"))) %>%
+  ggplot(aes(x = Lat_Dev_SD_Pre_Press, y = Reaction_Frames_Pre_Press * (1000/60), color = KSS)) +
+  geom_point(alpha = 0.3, size = 1.5) +
+  geom_smooth(method = "lm", se = TRUE, color = "black", linewidth = 0.5) +
+  scale_color_viridis_c(direction = -1) +
+  facet_wrap(~ Drive) +
+  labs(
+    x = "Lateral deviation SD before press (m)",
+    y = "Reaction time (ms)",
+    color = "KSS",
+    title = "Pre-press driving stability vs reaction time",
+  ) +
+  theme_minimal()
+```
+
