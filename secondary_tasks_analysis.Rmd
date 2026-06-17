@@ -4,6 +4,7 @@ output:
   prettydoc::html_pretty:
     theme: cayman
     highlight: github
+    lib_dir: ".libs/"
 author:
   - "John Kafumbe"
   - "Jeffrey Olsen"
@@ -13,7 +14,14 @@ date: "`r format(Sys.time(), '%B %d, %Y')`"
 ```{r setup}
 #| include = FALSE
 
-knitr::opts_chunk$set(echo = TRUE, fig.path = ".figures/")
+knitr::opts_chunk$set(
+  echo = TRUE,
+  cache = TRUE,
+  autodep = TRUE,
+  fig.path = ".figures/",
+  cache.path = ".cache/",
+  dev = "svglite"
+)
 
 library(tidyverse)
 library(dplyr)
@@ -28,8 +36,10 @@ library(plotly)
 MAKE_PLOTS <- TRUE
 ```
 
+## Read in data
+
 ```{r Read in data}
-#| include = FALSE
+#| cache = FALSE
 
 setwd(this.dir())
 
@@ -330,8 +340,10 @@ for (i in 1:5) {
 ## Reaction time by subject, drive, KSS
 
 ```{r "Reaction time by subject, drive, KSS"}
+#| out.width = "100%",
 #| eval = MAKE_PLOTS
 
+# Line plot
 task_matrix %>%
   drop_na(KSS, Subject, Drive, Reaction_Frames) %>%
   group_by(Subject, Drive, KSS) %>%
@@ -340,7 +352,6 @@ task_matrix %>%
     .groups = "drop"
   ) %>%
   {
-    # Line plot
     print(
       ggplot(
         data = filter(
@@ -354,9 +365,12 @@ task_matrix %>%
       ) +
         geom_point(aes(color = KSS), size = 3) +
         geom_line() +
-        labs(x = "Drive", y = "Reaction time (ms)", color = "KSS score")
+        labs(x = "Drive", y = "Reaction time (ms)", color = "KSS score") +
+        scale_color_continuous(breaks = 1:9, limits = c(1, 9))
     )
   }
+
+# Heat map
 task_matrix %>%
   group_by(Drive, KSS) %>%
   summarize(
@@ -365,8 +379,7 @@ task_matrix %>%
     .groups = "drop"
   ) %>%
   {
-    # Heat map
-    ggplotly(
+    print(
       ggplot(
         data = .,
         aes(y = factor(KSS), x = Drive)
@@ -376,10 +389,12 @@ task_matrix %>%
         labs(x = "Drive", y = "KSS score", fill = "Reaction time (ms)")
     )
   }
+
+# Box plot
 task_matrix %>%
   mutate(Reaction_Time = Reaction_Frames * (1000 / 60)) %>%
+  drop_na(KSS) %>%
   {
-    # Box plot
     print(
       ggplot(
         data = .,
@@ -404,7 +419,7 @@ some trait and aggregate across drivers within groups.
 
 task_matrix %>%
   group_by(Phase) %>%
-  summarise(
+  summarize(
     prop_zero = mean(Saccade_Count == 0),
     mean_count = mean(Saccade_Count),
     median_count = median(Saccade_Count)
@@ -427,7 +442,7 @@ summary(model_saccade_zip)
 task_matrix %>%
   mutate(Zero_Saccade = Saccade_Count == 0) %>%
   group_by(Drive, Phase) %>%
-  summarise(
+  summarize(
     Prop_Zero = mean(Zero_Saccade),
     SE = sd(Zero_Saccade) / sqrt(n()),
     .groups = "drop"
@@ -436,28 +451,62 @@ task_matrix %>%
   geom_col(position = "dodge") +
   theme_minimal()
 ```
+
 ```{r Pre press Driving Stability and Reaction Time Plot and model}
 #| out.width = "100%"
 
 model_rt_driving <- lmer(
-  Reaction_Frames_Pre_Press ~ Lat_Dev_SD_Pre_Press + Speed_SD_Pre_Press + BAC + KSS + (1 | Subject),
+  (Reaction_Frames_Pre_Press * (1000 / 60)) ~
+    BAC +
+    KSS +
+    as.numeric(Drive) + # Drive term to adjust for learning effect
+    (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model_rt_driving)
 
 wideform_task_matrix %>%
   drop_na(Lat_Dev_SD_Pre_Press, Reaction_Frames_Pre_Press, Drive, KSS) %>%
-  mutate(Drive = factor(Drive, labels = c("Drive 1", "Drive 2", "Drive 3", "Drive 4", "Drive 5"))) %>%
-  ggplot(aes(x = Lat_Dev_SD_Pre_Press, y = Reaction_Frames_Pre_Press * (1000 / 60), color = KSS)) +
+  mutate(Drive = factor(
+    Drive,
+    labels = c(
+      "Drive 1",
+      "Drive 2",
+      "Drive 3",
+      "Drive 4",
+      "Drive 5"
+    )
+  )) %>%
+  ggplot(aes(
+    x = Lat_Dev_SD_Pre_Press,
+    y = Reaction_Frames_Pre_Press * (1000 / 60),
+    color = KSS
+  )) +
   geom_point(alpha = 0.3, size = 1.5) +
   geom_smooth(method = "lm", se = TRUE, color = "black", linewidth = 0.5) +
   scale_color_viridis_c(direction = -1) +
   facet_wrap(~Drive) +
   labs(
-    x = "Lateral deviation SD before press (m)",
+    x = "Lateral deviation SD before press (ft)",
     y = "Reaction time (ms)",
     color = "KSS",
     title = "Pre-press driving stability vs reaction time",
   ) +
-  theme_minimal()
+  theme_minimal() +
+  ylim(0, 5000) +
+  xlim(0, 1.5)
+
+reaction_vs_latdev_by_drive_model <-
+  lmer(
+    data = wideform_task_matrix,
+    formula = (
+      Reaction_Frames_Pre_Press * (1000 / 60)) ~
+      Lat_Dev_SD_Control +
+      KSS +
+      BAC +
+      as.numeric(Drive) + # To adjust for learning effect
+      Lat_Dev_SD_Control * BAC +
+      (1 | Subject)
+  )
+summary(reaction_vs_latdev_by_drive_model)
 ```
