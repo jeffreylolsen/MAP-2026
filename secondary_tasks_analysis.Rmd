@@ -372,6 +372,7 @@ task_matrix %>%
 
 # Heat map
 task_matrix %>%
+  drop_na(KSS) %>%
   group_by(Drive, KSS) %>%
   summarize(
     Reaction_Time = mean(Reaction_Frames) * (1000 / 60),
@@ -438,7 +439,11 @@ model_saccade_zip <- glmmTMB(
 summary(model_saccade_zip)
 ```
 
-```{r Visualization for zero-saccade windows by Drive}
+## Visualization for zero-saccade windows by drive
+
+```{r Visualization for zero-saccade windows by drive}
+#| eval = MAKE_PLOTS
+
 task_matrix %>%
   mutate(Zero_Saccade = Saccade_Count == 0) %>%
   group_by(Drive, Phase) %>%
@@ -452,8 +457,11 @@ task_matrix %>%
   theme_minimal()
 ```
 
+## Pre-press driving stability and reaction time
+
 ```{r Pre press Driving Stability and Reaction Time Plot and model}
-#| out.width = "100%"
+#| out.width = "100%",
+#| eval = MAKE_PLOTS
 
 model_rt_driving <- lmer(
   (Reaction_Frames_Pre_Press * (1000 / 60)) ~
@@ -510,3 +518,45 @@ reaction_vs_latdev_by_drive_model <-
   )
 summary(reaction_vs_latdev_by_drive_model)
 ```
+
+## `Per_Close` analysis
+
+```{r Per_Close analysis}
+#| eval = MAKE_PLOTS
+
+per_close_model <- lmer(
+  data = wideform_task_matrix,
+  formula = (
+    Per_Close_Pre_Press ~
+      KSS +
+      BAC +
+      as.numeric(Drive) + # To adjust for learning effect
+      (1 | Subject)
+  )
+)
+summary(per_close_model)
+
+# Heat map
+task_matrix %>%
+  drop_na(Per_Close, KSS) %>%
+  group_by(Drive, KSS) %>%
+  summarize(
+    Per_Close = mean(Per_Close) * (1000 / 60),
+    Total_tasks = n(),
+    .groups = "drop"
+  ) %>%
+  {
+    print(
+      ggplot(
+        data = .,
+        aes(y = factor(KSS), x = Drive)
+      ) +
+        geom_tile(aes(fill = Per_Close)) +
+        scale_fill_gradient(low = "royalblue", high = "springgreen") +
+        labs(x = "Drive", y = "KSS score", fill = "% of time with eyes closed")
+    )
+  }
+```
+
+Much more variation in `Per_Close` is explained by self-reported fatigue
+than by BAC.
