@@ -6,6 +6,7 @@ library(arrow)
 library(data.table)
 library(this.path)
 library(runner)
+library(qs2)
 
 ### Read in DMS data
 
@@ -289,4 +290,4 @@ wideform_task_matrix <- task_matrix %>%
   )
 
 ### Write environment
-save.image("./data/processed_data.RData")
+qs_save(as.list(environment()), "./data/processed_data.qs")

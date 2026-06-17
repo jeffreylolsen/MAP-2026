@@ -32,6 +32,7 @@ library(data.table)
 library(this.path)
 library(glmmTMB)
 library(plotly)
+library(qs2)
 
 MAKE_PLOTS <- TRUE
 ```
@@ -43,11 +44,13 @@ MAKE_PLOTS <- TRUE
 
 setwd(this.dir())
 
-if (file.mtime("./data/processed_data.RData") <
+if (file.mtime("./data/processed_data.qs") <
   file.mtime("./data_processing.R")) {
-  source("./data_processing.R")
+  processing_env <- new.env()
+  source("./data_processing.R", local = processing_env)
+  list2env(as.list(processing_env), envir = globalenv())
 } else {
-  load("./data/processed_data.RData")
+  qs_readm("./data/processed_data.qs")
 }
 ```
 
@@ -553,7 +556,7 @@ task_matrix %>%
       ) +
         geom_tile(aes(fill = Per_Close)) +
         scale_fill_gradient(low = "royalblue", high = "springgreen") +
-        labs(x = "Drive", y = "KSS score", fill = "% of time with eyes closed")
+        labs(x = "Drive", y = "KSS score", fill = "Proportion of time with eyes closed")
     )
   }
 ```
