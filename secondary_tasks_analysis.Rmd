@@ -33,8 +33,6 @@ library(this.path)
 library(glmmTMB)
 library(plotly)
 library(qs2)
-
-MAKE_PLOTS <- TRUE
 ```
 
 ## Read in data
@@ -57,19 +55,24 @@ if (file.mtime("./data/processed_data.qs") <
 ## Models
 
 ```{r Models}
-model_combined <- lmer(Avg_Pupil_Diameter_mean_diff ~ factor(Drive) + (1 | Subject),
+model_combined <- lmer(
+  Avg_Pupil_Diameter_mean_diff ~
+    factor(Drive) + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model_combined)
 
-# Model to compare Pupil_diff_avg in relation to press events and lane deviation events
+# Model to compare Pupil_diff_avg in relation to press events
+# and lane deviation events
 
 model2 <- lmer(Deviation_Frames_Prop_Diff ~ factor(Drive) + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model2)
 
-# Model testing the fixed effects of alcohol (BAC) and fatigue (KSS) on averaged bilateral pupil reactivity, controlling for individual baseline variance
+# Model testing the fixed effects of alcohol (BAC) and fatigue (KSS) on
+# averaged bilateral pupil reactivity,
+# controlling for individual baseline variance
 
 model3 <- lmer(Avg_Pupil_Diameter_mean_diff ~ BAC + KSS + (1 | Subject),
   data = wideform_task_matrix
@@ -96,21 +99,20 @@ model_dev <- lmer(Deviation_Frames_Prop_Diff ~ BAC + KSS + (1 | Subject),
 )
 summary(model_dev)
 
-print(t.test(wideform_task_matrix$Lat_Dev_SD_Post_Press - wideform_task_matrix$Lat_Dev_SD_Pre_Press))
-print(t.test(wideform_task_matrix$Speed_SD_Post_Press - wideform_task_matrix$Speed_SD_Pre_Press))
+print(t.test(wideform_task_matrix$Lat_Dev_SD_Post_Press -
+  wideform_task_matrix$Lat_Dev_SD_Pre_Press))
+print(t.test(wideform_task_matrix$Speed_SD_Post_Press -
+  wideform_task_matrix$Speed_SD_Pre_Press))
 ```
 
 ## Preliminary lane deviation analysis
 
 ```{r Preliminary lane deviation analysis}
-#| fig.show = "hide",
-#| eval = MAKE_PLOTS
+#| fig.height = 10,
+#| out.width = "100%"
 
 ggplot(
-  data = filter(
-    task_matrix,
-    Drive == 1 & Phase == "Pre_Press"
-  ),
+  data = task_matrix,
   aes(x = Deviation_frames_prop)
 ) +
   geom_density() +
@@ -121,115 +123,55 @@ ggplot(
     )$Deviation_frames_prop)),
     linetype = "dashed"
   ) +
-  xlim(0, 1) +
-  labs(title = "Sober time deviated pre-press (as proportion)")
-ggplot(
-  data = filter(
-    task_matrix,
-    Drive == 1 & Phase == "Post_Press"
-  ),
-  aes(x = Deviation_frames_prop)
-) +
-  geom_density() +
-  geom_vline(
-    aes(xintercept = mean(filter(
-      task_matrix,
-      Drive == 1 & Phase == "Post_Press"
-    )$Deviation_frames_prop)),
-    linetype = "dashed"
-  ) +
-  xlim(0, 1) +
-  labs(title = "Sober time deviated post-press (as proportion)")
-
-ggplot(
-  data = filter(
-    task_matrix,
-    Drive == 2 & Phase == "Pre_Press"
-  ),
-  aes(x = Deviation_frames_prop)
-) +
-  geom_density() +
-  geom_vline(
-    aes(xintercept = mean(filter(
-      task_matrix,
-      Drive == 2 & Phase == "Pre_Press"
-    )$Deviation_frames_prop)),
-    linetype = "dashed"
-  ) +
-  xlim(0, 1) +
-  labs(title = "0.1 BrAC time deviated pre-press (as proportion)")
-ggplot(
-  data = filter(
-    task_matrix,
-    Drive == 2 & Phase == "Post_Press"
-  ),
-  aes(x = Deviation_frames_prop)
-) +
-  geom_density() +
-  geom_vline(
-    aes(xintercept = mean(filter(
-      task_matrix,
-      Drive == 2 & Phase == "Post_Press"
-    )$Deviation_frames_prop)),
-    linetype = "dashed"
-  ) +
-  xlim(0, 1) +
-  labs(title = "0.1 BrAC time deviated post-press (as proportion)")
+  facet_wrap(~ Drive + Phase, ncol = 3) +
+  xlim(0, 1)
 ```
 
 ## Distributions of deviation proportion differences by drive
 
 ```{r Distributions of deviation proportion differences by drive}
-#| eval = MAKE_PLOTS,
-#| fig.show = "hide"
-
 # Limit to tasks where there was at least one frame of deviation before or after
-for (i in 1:5) {
-  print(ggplot(
-    data = wideform_task_matrix %>% filter(
-      Drive == i,
-      Deviation_frames_prop_Post_Press != 0 |
-        Deviation_frames_prop_Pre_Press != 0
-    ),
-    aes(x = Deviation_Frames_Prop_Diff)
-  ) +
-    geom_density() +
-    xlim(-1, 1) +
-    labs(title = glue("Drive {i}")))
-}
+ggplot(
+  data = wideform_task_matrix %>% filter(
+    Deviation_frames_prop_Post_Press != 0 |
+      Deviation_frames_prop_Pre_Press != 0
+  ),
+  aes(x = Deviation_Frames_Prop_Diff)
+) +
+  geom_density() +
+  facet_wrap(~Drive) +
+  xlim(-1, 1)
 ```
 
 ## Plots of trends across individuals
 
 ```{r Plots of trends across individuals}
-#| fig.show = "hold",
-#| eval = MAKE_PLOTS
+#| fig.show = "hold"
 
 # Average pupil diameter
-for (i in 1:5) {
-  print(ggplot(
-    data = filter(non_aug, Drive == i) %>%
-      group_by(Subject, Drive, Frame_Num) %>%
-      mutate(Avg_Pupil_Diameter_mean = mean(Avg_Pupil_Diameter, na.rm = TRUE)) %>%
-      ungroup(),
-    aes(x = Frame_Num, y = Avg_Pupil_Diameter_mean, color = Subject)
+ggplot(
+  data = non_aug %>%
+    group_by(Subject, Drive, Frame_Num) %>%
+    mutate(Avg_Pupil_Diameter_mean = mean(
+      Avg_Pupil_Diameter,
+      na.rm = TRUE
+    )) %>%
+    ungroup(),
+  aes(x = Frame_Num, y = Avg_Pupil_Diameter_mean, color = Subject)
+) +
+  geom_smooth(
+    linewidth = 0.1,
+    se = FALSE,
+    method = "bam",
+    formula = y ~ s(x, bs = "cs")
   ) +
-    geom_smooth(
-      linewidth = 0.1,
-      se = FALSE,
-      method = "bam",
-      formula = y ~ s(x, bs = "cs")
-    ) +
-    theme(legend.position = "NONE") +
-    labs(title = glue("Drive {i}")))
-}
+  facet_wrap(~Drive) +
+  theme(legend.position = "NONE")
 ```
 
 ## Box plots to compare pre & post tasks
 
 ```{r Box Plots for task matrix}
-#| eval = MAKE_PLOTS
-
 plot_data <- task_matrix %>%
   filter(Phase != "Control") %>%
   mutate(Phase = factor(Phase, levels = c("Pre_Press", "Post_Press"))) %>%
@@ -244,8 +186,6 @@ ggplot(plot_data, aes(x = Phase, y = Avg_Pupil_Diameter_mean)) +
 ## Plots of trends around button presses
 
 ```{r Plots of trends around button presses}
-#| eval = MAKE_PLOTS
-
 # Get left button press indices
 left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X
 
@@ -253,7 +193,10 @@ left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X
 obs_around_press <- bind_rows(lapply(
   unique(task_matrix$Frame_Index),
   function(press) {
-    frames_in_segment <- filter(task_matrix, Frame_Index == press)[[1, "Reaction_Frames"]]
+    frames_in_segment <- filter(
+      task_matrix,
+      Frame_Index == press
+    )[[1, "Reaction_Frames"]]
 
     non_aug[seq(
       press - frames_in_segment,
@@ -308,8 +251,8 @@ change faster/slower proportional to the task reaction time.
 ## Pupil diameter by KSS and drive
 
 ```{r Pupil diameter by KSS and drive}
-#| fig.show = "hold",
-#| eval = MAKE_PLOTS
+#| fig.show = "hold"
+
 eye_kss <- non_aug %>%
   filter(!is.na(Avg_Pupil_Diameter) & !is.na(KSS_Score)) %>%
   select(KSS_Score, Frame_Num, Drive, Avg_Pupil_Diameter) %>%
@@ -319,32 +262,29 @@ eye_kss <- non_aug %>%
     .groups = "drop"
   )
 
-for (i in 1:5) {
-  print(ggplot(
-    data = filter(eye_kss, Drive == i),
-    aes(
-      x = Frame_Num,
-      y = Avg_Pupil_Diameter,
-      group = factor(KSS_Score),
-      color = as.numeric(as.character(KSS_Score))
-    )
+ggplot(
+  data = eye_kss,
+  aes(
+    x = Frame_Num,
+    y = Avg_Pupil_Diameter,
+    group = factor(KSS_Score),
+    color = as.numeric(as.character(KSS_Score))
+  )
+) +
+  geom_smooth(
+    linewidth = 0.3, se = FALSE,
+    method = "bam", formula = y ~ s(x, bs = "cs")
   ) +
-    geom_smooth(
-      linewidth = 0.3, se = FALSE,
-      method = "bam", formula = y ~ s(x, bs = "cs")
-    ) +
-    theme(legend.position = "bottom") +
-    scale_color_viridis_c(name = "KSS", direction = -1) +
-    labs(title = glue("Drive {i}"))) +
-    ylim(0, 6)
-}
+  facet_wrap(~Drive) +
+  theme(legend.position = "bottom") +
+  scale_color_viridis_c(name = "KSS", direction = -1) +
+  ylim(0, 6)
 ```
 
 ## Reaction time by subject, drive, KSS
 
 ```{r "Reaction time by subject, drive, KSS"}
-#| out.width = "100%",
-#| eval = MAKE_PLOTS
+#| out.width = "100%"
 
 # Line plot
 task_matrix %>%
@@ -355,22 +295,20 @@ task_matrix %>%
     .groups = "drop"
   ) %>%
   {
-    print(
-      ggplot(
-        data = filter(
-          .,
-          as.numeric(Subject) %in% sample(
-            unique(task_matrix$Subject),
-            10
-          )
-        ),
-        aes(x = Drive, y = Reaction_Time, group = Subject)
-      ) +
-        geom_point(aes(color = KSS), size = 3) +
-        geom_line() +
-        labs(x = "Drive", y = "Reaction time (ms)", color = "KSS score") +
-        scale_color_continuous(breaks = 1:9, limits = c(1, 9))
-    )
+    ggplot(
+      data = filter(
+        .,
+        as.numeric(Subject) %in% sample(
+          unique(task_matrix$Subject),
+          10
+        )
+      ),
+      aes(x = Drive, y = Reaction_Time, group = Subject)
+    ) +
+      geom_point(aes(color = KSS), size = 3) +
+      geom_line() +
+      labs(x = "Drive", y = "Reaction time (ms)", color = "KSS score") +
+      scale_color_continuous(breaks = 1:9, limits = c(1, 9))
   }
 
 # Heat map
@@ -383,15 +321,13 @@ task_matrix %>%
     .groups = "drop"
   ) %>%
   {
-    print(
-      ggplot(
-        data = .,
-        aes(y = factor(KSS), x = Drive)
-      ) +
-        geom_tile(aes(fill = Reaction_Time)) +
-        scale_fill_gradient(low = "royalblue", high = "springgreen") +
-        labs(x = "Drive", y = "KSS score", fill = "Reaction time (ms)")
-    )
+    ggplot(
+      data = .,
+      aes(y = factor(KSS), x = Drive)
+    ) +
+      geom_tile(aes(fill = Reaction_Time)) +
+      scale_fill_gradient(low = "royalblue", high = "springgreen") +
+      labs(x = "Drive", y = "KSS score", fill = "Reaction time (ms)")
   }
 
 # Box plot
@@ -399,16 +335,14 @@ task_matrix %>%
   mutate(Reaction_Time = Reaction_Frames * (1000 / 60)) %>%
   drop_na(KSS) %>%
   {
-    print(
-      ggplot(
-        data = .,
-        aes(x = factor(KSS), y = Reaction_Time)
-      ) +
-        geom_boxplot(outlier.shape = NA) +
-        facet_wrap(~Drive) +
-        ylim(0, 4000) +
-        labs(x = "KSS score", y = "Reaction time (ms)")
-    )
+    ggplot(
+      data = .,
+      aes(x = factor(KSS), y = Reaction_Time)
+    ) +
+      geom_boxplot(outlier.shape = NA) +
+      facet_wrap(~Drive) +
+      ylim(0, 4000) +
+      labs(x = "KSS score", y = "Reaction time (ms)")
   }
 ```
 
@@ -418,8 +352,7 @@ some trait and aggregate across drivers within groups.
 ## Zero-inflated poisson model for saccades
 
 ```{r Saccade Zero Inflation}
-#| out.width = "100%",
-#| eval = MAKE_PLOTS
+#| out.width = "100%"
 
 task_matrix %>%
   group_by(Phase) %>%
@@ -445,8 +378,6 @@ summary(model_saccade_zip)
 ## Visualization for zero-saccade windows by drive
 
 ```{r Visualization for zero-saccade windows by drive}
-#| eval = MAKE_PLOTS
-
 task_matrix %>%
   mutate(Zero_Saccade = Saccade_Count == 0) %>%
   group_by(Drive, Phase) %>%
@@ -455,16 +386,30 @@ task_matrix %>%
     SE = sd(Zero_Saccade) / sqrt(n()),
     .groups = "drop"
   ) %>%
-  ggplot(aes(x = factor(Drive), y = Prop_Zero, fill = Phase)) +
+  ggplot(aes(
+    x = factor(Drive),
+    y = Prop_Zero,
+    fill = factor(Phase,
+      labels = c(
+        "Control",
+        "Pre Press",
+        "Post Press"
+      )
+    )
+  )) +
   geom_col(position = "dodge") +
+  labs(
+    x = "Drive",
+    y = "Proportion of segments with zero saccades",
+    fill = "Phase"
+  ) +
   theme_minimal()
 ```
 
 ## Pre-press driving stability and reaction time
 
 ```{r Pre press Driving Stability and Reaction Time Plot and model}
-#| out.width = "100%",
-#| eval = MAKE_PLOTS
+#| out.width = "100%"
 
 model_rt_driving <- lmer(
   (Reaction_Frames_Pre_Press * (1000 / 60)) ~
@@ -525,8 +470,6 @@ summary(reaction_vs_latdev_by_drive_model)
 ## `Per_Close` analysis
 
 ```{r Per_Close analysis}
-#| eval = MAKE_PLOTS
-
 per_close_model <- lmer(
   data = wideform_task_matrix,
   formula = (
@@ -549,15 +492,17 @@ task_matrix %>%
     .groups = "drop"
   ) %>%
   {
-    print(
-      ggplot(
-        data = .,
-        aes(y = factor(KSS), x = Drive)
-      ) +
-        geom_tile(aes(fill = Per_Close)) +
-        scale_fill_gradient(low = "royalblue", high = "springgreen") +
-        labs(x = "Drive", y = "KSS score", fill = "Proportion of time with eyes closed")
-    )
+    ggplot(
+      data = .,
+      aes(y = factor(KSS), x = Drive)
+    ) +
+      geom_tile(aes(fill = Per_Close)) +
+      scale_fill_gradient(low = "royalblue", high = "springgreen") +
+      labs(
+        x = "Drive",
+        y = "KSS score",
+        fill = "Proportion of time with eyes closed"
+      )
   }
 ```
 
