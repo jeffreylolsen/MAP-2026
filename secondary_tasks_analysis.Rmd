@@ -42,8 +42,9 @@ library(qs2)
 
 setwd(this.dir())
 
-if (file.mtime("./data/processed_data.qs") <
-  file.mtime("./data_processing.R")) {
+if (!file.exists("./data/processed_data.qs") |
+  file.mtime("./data/processed_data.qs") <
+    file.mtime("./data_processing.R")) {
   processing_env <- new.env()
   source("./data_processing.R", local = processing_env)
   list2env(as.list(processing_env), envir = globalenv())
