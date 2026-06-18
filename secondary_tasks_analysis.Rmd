@@ -355,13 +355,6 @@ some trait and aggregate across drivers within groups.
 ```{r Saccade Zero Inflation}
 #| out.width = "100%"
 
-task_matrix %>%
-  group_by(Phase) %>%
-  summarize(
-    prop_zero = mean(Saccade_Count == 0),
-    mean_count = mean(Saccade_Count),
-    median_count = median(Saccade_Count)
-  )
 ggplot(task_matrix, aes(x = Saccade_Count)) +
   geom_histogram(binwidth = 0.5) +
   facet_wrap(~Phase)
@@ -372,7 +365,6 @@ model_saccade_zip <- glmmTMB(
   family = poisson,
   data = task_matrix
 )
-
 summary(model_saccade_zip)
 ```
 
