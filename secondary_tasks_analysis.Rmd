@@ -399,6 +399,26 @@ task_matrix %>%
   theme_minimal()
 ```
 
+## Modeling whether a saccade occurs in a task window
+
+```{r Modeling whether a saccade occurs in a task window}
+saccade_logit_model <- glmer(
+  data = task_matrix,
+  formula =
+    (Saccade_Count > 0) ~
+      BAC +
+      as.numeric(Drive) +
+      KSS +
+      Phase +
+      (1 | Subject),
+  family = "binomial"
+)
+summary(saccade_logit_model)
+```
+
+A similar model with an interaction term between phase and drive number
+was not better-fitting when accounting for the additional parameters.
+
 ## Pre-press driving stability and reaction time
 
 ```{r Pre press Driving Stability and Reaction Time Plot and model}
