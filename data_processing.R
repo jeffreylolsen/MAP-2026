@@ -89,8 +89,9 @@ output <- output %>% left_join(
 
 ### Add and modify predictors
 
-non_aug$Blinking <- non_aug$LPupil_Diameter == 0 &
-  non_aug$RPupil_Diameter == 0
+non_aug <- non_aug %>% mutate(
+  Blinking = Left_Eyelid_Closed & Right_Eyelid_Closed
+)
 
 # Get saccades, fixations, and blinks
 saccade_sens <- 15 # Detection threshold parameter for `saccades` event detection
