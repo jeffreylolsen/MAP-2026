@@ -33,12 +33,26 @@ library(this.path)
 library(glmmTMB)
 library(plotly)
 library(qs2)
+library(downloadthis)
 ```
 
-## Read in data
+<div style="text-align: center;">
+```{r Download Rmd}
+#| echo = FALSE
+
+download_file(
+  this.path(),
+  button_label = "Download Rmd",
+  button_type = "primary",
+  has_icon = TRUE,
+  self_contained = TRUE
+)
+```
+</div>
 
 ```{r Read in data}
-#| cache = FALSE
+#| cache = FALSE,
+#| include = FALSE
 
 setwd(this.dir())
 
