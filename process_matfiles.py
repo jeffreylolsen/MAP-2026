@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import sklearn
 from scipy.io import loadmat
 import sktime
+import pyarrow
 
 ## Directory of all .MAT files
 matdata_dir = "./data/matfiles"
