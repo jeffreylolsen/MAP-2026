@@ -242,6 +242,7 @@ task_matrix <- task_windows_with_control %>%
     Lat_Dev_SD = sd(Vehicle_Lat_Dev, na.rm = TRUE),
     Speed_SD = sd(Vehicle_Speed, na.rm = TRUE),
     Braking_Events = sum(lag(Brake_Pedal_Force) == 0 & Brake_Pedal_Force > 0, na.rm = TRUE),
+    Brake_Force_mean = mean(Brake_Pedal_Force, na.rm = TRUE),
     Reaction_Frames = n(),
     Saccade_Count = sum(Eye_Event == "saccade" & lag(Eye_Event) != "saccade", na.rm = TRUE),
     Saccade_Prop = mean(Eye_Event == "saccade", na.rm = TRUE),

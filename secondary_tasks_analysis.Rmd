@@ -421,8 +421,9 @@ saccade_logit_model <- glmer(
   formula =
     (Saccade_Count > 0) ~
       BAC +
-      as.numeric(Drive) +
       KSS +
+      BAC * KSS +
+      as.numeric(Drive) +
       Phase +
       (1 | Subject),
   family = "binomial"
@@ -503,6 +504,7 @@ per_close_model <- lmer(
     Per_Close_Pre_Press ~
       KSS +
       BAC +
+      KSS * BAC +
       as.numeric(Drive) + # To adjust for learning effect
       (1 | Subject)
   )
@@ -535,3 +537,24 @@ task_matrix %>%
 
 Much more variation in `Per_Close` is explained by self-reported fatigue
 than by BAC.
+
+## Brake force analysis
+
+```{r Brake force analysis}
+brake_force_model <- lmer(
+  data = task_matrix,
+  formula = (
+    Brake_Force_mean ~
+      Phase +
+      KSS +
+      BAC +
+      KSS * BAC +
+      as.numeric(Drive) +
+      (1 | Subject)
+  )
+)
+summary(brake_force_model)
+```
+
+A greater BAC is associated with lower average brake force,
+as is the learning effect.
