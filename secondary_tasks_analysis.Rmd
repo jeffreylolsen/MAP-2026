@@ -26,6 +26,7 @@ knitr::opts_chunk$set(
 library(tidyverse)
 library(dplyr)
 library(lme4)
+library(lmerTest)
 library(glue)
 library(mgcv)
 library(data.table)
