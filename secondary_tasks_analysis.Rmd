@@ -496,6 +496,33 @@ reaction_vs_latdev_by_drive_model <-
 summary(reaction_vs_latdev_by_drive_model)
 ```
 
+## Lateral deviation by task segment
+
+```{r Lateral deviation by task segment}
+lat_dev_phase_model <- lmer(
+  data = task_matrix,
+  formula = Lat_Dev_SD ~
+    KSS +
+    BAC +
+    KSS * BAC +
+    as.numeric(Drive) +
+    Phase +
+    (1 | Subject)
+)
+summary(lat_dev_phase_model)
+
+lat_dev_phase_model <- lmer(
+  data = task_matrix,
+  formula = Lat_Dev_SD ~
+    KSS +
+    BAC +
+    as.numeric(Drive) +
+    Phase +
+    (1 | Subject)
+)
+summary(lat_dev_phase_model)
+```
+
 ## `Per_Close` analysis
 
 ```{r Per_Close analysis}
@@ -549,6 +576,7 @@ brake_force_model <- lmer(
       Phase +
       KSS +
       BAC +
+      BAC * Phase +
       KSS * BAC +
       as.numeric(Drive) +
       (1 | Subject)
