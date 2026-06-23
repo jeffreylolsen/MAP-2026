@@ -483,15 +483,21 @@ wideform_task_matrix %>%
 
 reaction_vs_latdev_by_drive_model <-
   lmer(
-    data = wideform_task_matrix,
+    data = wideform_task_matrix %>%
+      mutate(
+        Lat_Dev_SD_Control_cent = Lat_Dev_SD_Control -
+          median(Lat_Dev_SD_Control, na.rm = TRUE),
+        BAC_cent = BAC - median(BAC, na.rm = TRUE)
+      ),
     formula = (
-      Reaction_Frames_Pre_Press * (1000 / 60)) ~
+      (Reaction_Frames_Pre_Press * (1000 / 60)) ~
       Lat_Dev_SD_Control +
       KSS +
       BAC +
       as.numeric(Drive) + # To adjust for learning effect
       Lat_Dev_SD_Control * BAC +
       (1 | Subject)
+    )
   )
 summary(reaction_vs_latdev_by_drive_model)
 ```
