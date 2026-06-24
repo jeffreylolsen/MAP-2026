@@ -1,9 +1,8 @@
 ---
 title: "Secondary Tasks Analysis"
 output:
-  prettydoc::html_pretty:
-    theme: cayman
-    highlight: github
+  rmdformats::html_clean:
+    highlight: espresso
     lib_dir: ".libs/"
     toc: true
 author:
@@ -21,6 +20,8 @@ knitr::opts_chunk$set(
   autodep = TRUE,
   fig.path = ".figures/",
   cache.path = ".cache/",
+  fig.width = 7,
+  fig.height = 5,
   dev = "svglite"
 )
 
