@@ -111,10 +111,8 @@ model_dev <- lmer(Deviation_Frames_Prop_Diff ~ BAC_cent + KSS_cent + (1 | Subjec
 )
 summary(model_dev)
 
-print(t.test(wideform_task_matrix$Lat_Dev_SD_Post_Press -
-  wideform_task_matrix$Lat_Dev_SD_Pre_Press))
-print(t.test(wideform_task_matrix$Speed_SD_Post_Press -
-  wideform_task_matrix$Speed_SD_Pre_Press))
+print(t.test(wideform_task_matrix$Lat_Dev_SD_diff))
+print(t.test(wideform_task_matrix$Speed_SD_diff))
 ```
 
 ## Preliminary lane deviation analysis
@@ -131,7 +129,7 @@ ggplot(
   geom_vline(
     aes(xintercept = mean(filter(
       task_matrix,
-      Drive == 1 & Phase == "Pre_Press"
+      Drive == 1 & Phase == "Control"
     )$Deviation_frames_prop)),
     linetype = "dashed"
   ) +
@@ -145,8 +143,8 @@ ggplot(
 # Limit to tasks where there was at least one frame of deviation before or after
 ggplot(
   data = wideform_task_matrix %>% filter(
-    Deviation_frames_prop_Post_Press != 0 |
-      Deviation_frames_prop_Pre_Press != 0
+    Deviation_frames_prop_Task != 0 |
+      Deviation_frames_prop_Control != 0
   ),
   aes(x = Deviation_Frames_Prop_Diff)
 ) +
@@ -184,10 +182,7 @@ ggplot(
 ## Box plots to compare pre & post tasks
 
 ```{r Box Plots for task matrix}
-plot_data <- task_matrix %>%
-  filter(Phase != "Control") %>%
-  mutate(Phase = factor(Phase, levels = c("Pre_Press", "Post_Press"))) %>%
-  filter(!is.na(Avg_Pupil_Diameter_mean))
+plot_data <- task_matrix %>% filter(!is.na(Avg_Pupil_Diameter_mean))
 
 ggplot(plot_data, aes(x = Phase, y = Avg_Pupil_Diameter_mean)) +
   geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
@@ -351,9 +346,9 @@ task_matrix %>%
   }
 
 # Box plot
-task_matrix %>%
+wideform_task_matrix %>%
   mutate(Reaction_Time = Reaction_Frames * (1000 / 60)) %>%
-  drop_na(KSS) %>%
+  drop_na(Phase_Control, KSS) %>%
   {
     ggplot(
       data = .,
@@ -404,8 +399,7 @@ task_matrix %>%
     fill = factor(Phase,
       labels = c(
         "Control",
-        "Pre Press",
-        "Post Press"
+        "Task"
       )
     )
   )) +
@@ -446,9 +440,9 @@ between the control and pre-task segments.
 A similar model with an interaction term between phase and drive number
 was not better-fitting when accounting for the additional parameters.
 
-## Pre-press driving stability and reaction time
+## Control frame driving stability and reaction time
 
-```{r Pre press Driving Stability and Reaction Time Plot and model}
+```{r Control frame driving stability and reaction time plot and model}
 #| out.width = "100%"
 
 model_rt_driving <- lmer(
@@ -462,7 +456,7 @@ model_rt_driving <- lmer(
 summary(model_rt_driving)
 
 wideform_task_matrix %>%
-  drop_na(Lat_Dev_SD_Pre_Press, Reaction_Frames, Drive, KSS) %>%
+  drop_na(Lat_Dev_SD_Control, Reaction_Frames, Drive, KSS) %>%
   mutate(Drive = factor(
     Drive,
     labels = c(
@@ -474,7 +468,7 @@ wideform_task_matrix %>%
     )
   )) %>%
   ggplot(aes(
-    x = Lat_Dev_SD_Pre_Press,
+    x = Lat_Dev_SD_Control,
     y = Reaction_Frames * (1000 / 60),
     color = KSS
   )) +
@@ -486,7 +480,7 @@ wideform_task_matrix %>%
     x = "Lateral deviation SD before press (ft)",
     y = "Reaction time (ms)",
     color = "KSS",
-    title = "Pre-press driving stability vs reaction time",
+    title = "Control frame driving stability vs reaction time",
   ) +
   theme_minimal() +
   ylim(0, 5000) +

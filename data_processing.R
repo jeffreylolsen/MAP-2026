@@ -125,17 +125,17 @@ non_aug[is.na(non_aug$Eye_Event), "Eye_Event"] <- "saccade"
 rm(non_saccades, indices, flattened_indices)
 
 ### Aggregate matrix
-
 non_aug <- non_aug %>%
   group_by(consecutive_id(Task_Available)) %>%
   mutate(Task_Start_X = first(X)) %>%
   ungroup()
 non_aug$`consecutive_id(Task_Available)` <- NULL
 
-# Long-form wrt pre/post pairs
-
 # Sensitivity of lateral deviation
 lat_dev_sens <- 4
+
+# Number of frames to add to task segments on top of reaction time
+frame_length <- 300
 
 # Cleaned button press frames
 press_events <- non_aug %>%
@@ -160,22 +160,16 @@ task_windows <- press_events %>%
     # Want the frame number within the run of the simulator
     Press_Frame = Frame_Num,
     Frame_Index = X,
-    Frame = c(
-      Task_Start_X:(X - 1),
-      X:(2 * X - Task_Start_X - 1)
-    ), # Include frame of press since press occurred before recording
-    Phase = c(
-      rep("Pre_Press", X - Task_Start_X),
-      rep("Post_Press", X - Task_Start_X)
-    )
+    Frame = Task_Start_X:(X + frame_length - 1),
+    Phase = rep("Task", X - Task_Start_X + frame_length)
   )
 
 # Find the boundaries of every task block per Daq run
 task_boundaries <- task_windows %>%
   group_by(DaqName, Subject, Drive, Press_Frame, Frame_Index) %>%
-  summarise(
+  summarize(
     Task_Start_X = min(Frame),
-    Segment_Length = n() / 2,
+    Segment_Length = n(),
     .groups = "drop"
   ) %>%
   arrange(DaqName, Task_Start_X) %>%
@@ -207,8 +201,7 @@ all_windows <- bind_rows(task_windows, control_windows) %>%
   arrange(DaqName, Frame) %>%
   mutate(Phase = factor(Phase, levels = c(
     "Control",
-    "Pre_Press",
-    "Post_Press"
+    "Task"
   )))
 rm(control_windows, task_windows)
 
@@ -223,7 +216,7 @@ rm(all_windows)
 # Aggregate into one row per window with the control phases
 task_matrix <- task_windows_with_control %>%
   group_by(DaqName, Subject, Drive, Press_Frame, Frame_Index, Phase) %>%
-  summarise(
+  summarize(
     LPupil_Diameter_mean = mean(LPupil_Diameter, na.rm = TRUE),
     RPupil_Diameter_mean = mean(RPupil_Diameter, na.rm = TRUE),
     Avg_Pupil_Diameter_mean = mean(Avg_Pupil_Diameter, na.rm = TRUE),
@@ -239,17 +232,24 @@ task_matrix <- task_windows_with_control %>%
     Per_Close = mean(Blinking, na.rm = TRUE),
     Lat_Dev_SD = sd(Vehicle_Lat_Dev, na.rm = TRUE),
     Speed_SD = sd(Vehicle_Speed, na.rm = TRUE),
-    Braking_Events = sum(lag(Brake_Pedal_Force) == 0 & Brake_Pedal_Force > 0, na.rm = TRUE),
+    Braking_Events = sum(lag(Brake_Pedal_Force) == 0 & Brake_Pedal_Force > 0,
+      na.rm = TRUE
+    ),
     Brake_Force_mean = mean(Brake_Pedal_Force, na.rm = TRUE),
-    Reaction_Frames = n(),
-    Saccade_Count = sum(Eye_Event == "saccade" & lag(Eye_Event) != "saccade", na.rm = TRUE),
+    Saccade_Count = sum(Eye_Event == "saccade" & lag(Eye_Event) != "saccade",
+      na.rm = TRUE
+    ),
     Saccade_Prop = mean(Eye_Event == "saccade", na.rm = TRUE),
+    Frame_Count = n(),
     .groups = "drop"
   ) %>%
   mutate(
     BAC_cent = BAC - median(BAC, na.rm = TRUE),
     KSS_cent = KSS - median(KSS, na.rm = TRUE)
-  )
+  ) %>%
+  group_by(Frame_Index) %>%
+  mutate(Reaction_Frames = Frame_Count[1] - frame_length) %>%
+  ungroup()
 rm(task_windows_with_control)
 
 write.csv(task_matrix, "./data/task_matrix.csv", row.names = FALSE)
@@ -265,31 +265,31 @@ wideform_task_matrix <- task_matrix %>%
   ) %>%
   mutate(
     Avg_Pupil_Diameter_mean_diff = (
-      Avg_Pupil_Diameter_mean_Post_Press - Avg_Pupil_Diameter_mean_Pre_Press
+      Avg_Pupil_Diameter_mean_Task - Avg_Pupil_Diameter_mean_Control
     ),
     RPupil_Diameter_mean_diff = (
-      RPupil_Diameter_mean_Post_Press - RPupil_Diameter_mean_Pre_Press
+      RPupil_Diameter_mean_Task - RPupil_Diameter_mean_Control
     ),
     LPupil_Diameter_mean_diff = (
-      LPupil_Diameter_mean_Post_Press - LPupil_Diameter_mean_Pre_Press
+      LPupil_Diameter_mean_Task - LPupil_Diameter_mean_Control
     ),
     Gaze_Yaw_mean_diff = (
-      Gaze_Yaw_mean_Post_Press - Gaze_Yaw_mean_Pre_Press
+      Gaze_Yaw_mean_Task - Gaze_Yaw_mean_Control
     ),
     Gaze_Pitch_mean_diff = (
-      Gaze_Pitch_mean_Post_Press - Gaze_Pitch_mean_Pre_Press
+      Gaze_Pitch_mean_Task - Gaze_Pitch_mean_Control
     ),
     Deviation_Frames_Prop_Diff = (
-      Deviation_frames_prop_Post_Press - Deviation_frames_prop_Pre_Press
+      Deviation_frames_prop_Task - Deviation_frames_prop_Control
     ),
     Lat_Dev_SD_diff = (
-      Lat_Dev_SD_Post_Press - Lat_Dev_SD_Pre_Press
+      Lat_Dev_SD_Task - Lat_Dev_SD_Control
     ),
     Speed_SD_diff = (
-      Speed_SD_Post_Press - Speed_SD_Pre_Press
+      Speed_SD_Task - Speed_SD_Control
     ),
     Braking_Events_diff = (
-      Braking_Events_Post_Press - Braking_Events_Pre_Press
+      Braking_Events_Task - Braking_Events_Control
     ),
   )
 
