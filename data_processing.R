@@ -94,7 +94,6 @@ non_aug <- non_aug %>% mutate(
 )
 
 # Get saccades, fixations, and blinks
-saccade_sens <- 15 # Detection threshold parameter for `saccades` event detection
 non_saccades <- detect.fixations(
   non_aug %>%
     select(
@@ -108,8 +107,7 @@ non_saccades <- detect.fixations(
       x = Gaze_Yaw,
       y = Gaze_Pitch,
       time = X
-    ),
-  lambda = saccade_sens
+    )
 )
 
 # Add column to `non_aug` for eye event type
