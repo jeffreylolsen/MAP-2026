@@ -5,6 +5,7 @@ output:
     theme: cayman
     highlight: github
     lib_dir: ".libs/"
+    toc: true
 author:
   - "John Kafumbe"
   - "Jeffrey Olsen"
@@ -71,12 +72,6 @@ if (!file.exists("./data/processed_data.qs") |
 ## Models
 
 ```{r Models}
-model_combined <- lmer(
-  Avg_Pupil_Diameter_mean_diff ~
-    factor(Drive) + (1 | Subject),
-  data = wideform_task_matrix
-)
-summary(model_combined)
 
 # Model to compare Pupil_diff_avg in relation to press events
 # and lane deviation events
@@ -267,8 +262,6 @@ change faster/slower proportional to the task reaction time.
 ## Pupil diameter by KSS and drive
 
 ```{r Pupil diameter by KSS and drive}
-#| fig.show = "hold"
-
 eye_kss <- non_aug %>%
   filter(!is.na(Avg_Pupil_Diameter) & !is.na(KSS_Score)) %>%
   select(KSS_Score, Frame_Num, Drive, Avg_Pupil_Diameter) %>%
@@ -295,6 +288,16 @@ ggplot(
   theme(legend.position = "bottom") +
   scale_color_viridis_c(name = "KSS", direction = -1) +
   ylim(0, 6)
+
+pupil_diameter_diff_model <- lmer(
+  Avg_Pupil_Diameter_mean_diff ~
+    BAC +
+    KSS +
+    as.numeric(Drive) +
+    (1 | Subject),
+  data = wideform_task_matrix
+)
+summary(pupil_diameter_diff_model)
 ```
 
 ## Reaction time by subject, drive, KSS
@@ -424,6 +427,7 @@ saccade_logit_model <- glmer(
       BAC +
       KSS +
       BAC * KSS +
+      #BAC * Phase +
       as.numeric(Drive) +
       Phase +
       (1 | Subject),
@@ -431,6 +435,12 @@ saccade_logit_model <- glmer(
 )
 summary(saccade_logit_model)
 ```
+
+Including an interaction term between BAC and Phase, there was no evidence
+($p = 0.196$) that the the effect of BAC on saccades is less (in magnitude) in
+the post-task segment than in the control group.
+There was no evidence to suggest a difference in BAC effect on saccades
+between the control and pre-task segments.
 
 A similar model with an interaction term between phase and drive number
 was not better-fitting when accounting for the additional parameters.
@@ -510,18 +520,8 @@ lat_dev_phase_model <- lmer(
   formula = Lat_Dev_SD ~
     KSS +
     BAC +
-    KSS * BAC +
-    as.numeric(Drive) +
-    Phase +
-    (1 | Subject)
-)
-summary(lat_dev_phase_model)
-
-lat_dev_phase_model <- lmer(
-  data = task_matrix,
-  formula = Lat_Dev_SD ~
-    KSS +
-    BAC +
+    BAC * KSS +
+    #BAC * Phase +
     as.numeric(Drive) +
     Phase +
     (1 | Subject)
@@ -529,22 +529,16 @@ lat_dev_phase_model <- lmer(
 summary(lat_dev_phase_model)
 ```
 
+There is moderate evidence to suggest that the effect of either
+KSS or BAC on SDLP is lessened as the other increases.
+
+There is no evidence that the effect of BAC on SDLP differs by task segment
+$(p > 0.6)$ for each task phase vs control.
+
+
 ## `Per_Close` analysis
 
 ```{r Per_Close analysis}
-per_close_model <- lmer(
-  data = wideform_task_matrix,
-  formula = (
-    Per_Close_Pre_Press ~
-      KSS +
-      BAC +
-      KSS * BAC +
-      as.numeric(Drive) + # To adjust for learning effect
-      (1 | Subject)
-  )
-)
-summary(per_close_model)
-
 # Heat map
 task_matrix %>%
   drop_na(Per_Close, KSS) %>%
@@ -567,10 +561,32 @@ task_matrix %>%
         fill = "Proportion of time with eyes closed"
       )
   }
+
+per_close_model <- lmer(
+  data = task_matrix,
+  formula = (
+    Per_Close ~
+      KSS +
+      BAC +
+      Phase +
+      BAC * KSS +
+      BAC * Phase +
+      as.numeric(Drive) + # To adjust for learning effect
+      (1 | Subject)
+  )
+)
+summary(per_close_model)
 ```
 
-Much more variation in `Per_Close` is explained by self-reported fatigue
-than by BAC.
+While there is no significant difference in `Per_Close` by task phase,
+there is strong evidence that the effect of either KSS or BAC on `Per_Close`
+is lessened as the other increases (similar to SDLP in the current model).
+There is also strong evidence that `Per_Close` increases with drive, so
+it's important to consider if Drive is absorbing the "fatigue effect"
+that should increase `Per_Close` with both KSS and Drive.
+There is no evidence of a significant BAC:Phase interaction,
+but, similarly to the saccade logit model, there is more evidence of a
+difference in BAC effect between control and post-task segments.
 
 ## Brake force analysis
 
@@ -582,8 +598,8 @@ brake_force_model <- lmer(
       Phase +
       KSS +
       BAC +
-      BAC * Phase +
-      KSS * BAC +
+      #BAC * Phase +
+      #BAC * KSS +
       as.numeric(Drive) +
       (1 | Subject)
   )
@@ -591,5 +607,5 @@ brake_force_model <- lmer(
 summary(brake_force_model)
 ```
 
-A greater BAC is associated with lower average brake force,
-as is the learning effect.
+A greater BAC is associated with lower average brake force.
+Interaction terms BAC:Phase and BAC:KSS are not statistically significant.
