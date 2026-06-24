@@ -86,27 +86,27 @@ summary(model2)
 # averaged bilateral pupil reactivity,
 # controlling for individual baseline variance
 
-model3 <- lmer(Avg_Pupil_Diameter_mean_diff ~ BAC + KSS + (1 | Subject),
+model3 <- lmer(Avg_Pupil_Diameter_mean_diff ~ BAC_cent + KSS_cent + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model3)
 
 # SDLP Model predicted by alcohol and fatigue
 
-model_sdlp <- lmer(Lat_Dev_SD_diff ~ BAC + KSS + (1 | Subject),
+model_sdlp <- lmer(Lat_Dev_SD_diff ~ BAC_cent + KSS_cent + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model_sdlp)
 
 # Speed_SD_Diff model predicted by alcohol and fatigue
 
-model_speed <- lmer(Speed_SD_diff ~ BAC + KSS + (1 | Subject),
+model_speed <- lmer(Speed_SD_diff ~ BAC_cent + KSS_cent + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model_speed)
 
 # Lane departure proportion difference (you already build this column)
-model_dev <- lmer(Deviation_Frames_Prop_Diff ~ BAC + KSS + (1 | Subject),
+model_dev <- lmer(Deviation_Frames_Prop_Diff ~ BAC_cent + KSS_cent + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model_dev)
@@ -292,8 +292,8 @@ ggplot(
 
 pupil_diameter_diff_model <- lmer(
   Avg_Pupil_Diameter_mean_diff ~
-    BAC +
-    KSS +
+    BAC_cent +
+    KSS_cent +
     as.numeric(Drive) +
     (1 | Subject),
   data = wideform_task_matrix
@@ -379,8 +379,8 @@ ggplot(task_matrix, aes(x = Saccade_Count)) +
   facet_wrap(~Phase)
 
 model_saccade_zip <- glmmTMB(
-  Saccade_Count ~ Phase + BAC + KSS + (1 | Subject),
-  ziformula = ~ Phase + BAC, # What predicts being in the "zero" group?
+  Saccade_Count ~ Phase + BAC_cent + KSS_cent + (1 | Subject),
+  ziformula = ~ Phase + BAC_cent, # What predicts being in the "zero" group?
   family = poisson,
   data = task_matrix
 )
@@ -425,10 +425,10 @@ saccade_logit_model <- glmer(
   data = task_matrix,
   formula =
     (Saccade_Count > 0) ~
-      BAC +
-      KSS +
-      BAC * KSS +
-      #BAC * Phase +
+      BAC_cent +
+      KSS_cent +
+      BAC_cent * KSS_cent +
+      #BAC_cent * Phase +
       as.numeric(Drive) +
       Phase +
       (1 | Subject),
@@ -452,9 +452,9 @@ was not better-fitting when accounting for the additional parameters.
 #| out.width = "100%"
 
 model_rt_driving <- lmer(
-  (Reaction_Frames_Pre_Press * (1000 / 60)) ~
-    BAC +
-    KSS +
+  (Reaction_Frames * (1000 / 60)) ~
+    BAC_cent +
+    KSS_cent +
     as.numeric(Drive) + # Drive term to adjust for learning effect
     (1 | Subject),
   data = wideform_task_matrix
@@ -462,7 +462,7 @@ model_rt_driving <- lmer(
 summary(model_rt_driving)
 
 wideform_task_matrix %>%
-  drop_na(Lat_Dev_SD_Pre_Press, Reaction_Frames_Pre_Press, Drive, KSS) %>%
+  drop_na(Lat_Dev_SD_Pre_Press, Reaction_Frames, Drive, KSS) %>%
   mutate(Drive = factor(
     Drive,
     labels = c(
@@ -475,7 +475,7 @@ wideform_task_matrix %>%
   )) %>%
   ggplot(aes(
     x = Lat_Dev_SD_Pre_Press,
-    y = Reaction_Frames_Pre_Press * (1000 / 60),
+    y = Reaction_Frames * (1000 / 60),
     color = KSS
   )) +
   geom_point(alpha = 0.3, size = 1.5) +
@@ -501,12 +501,12 @@ reaction_vs_latdev_by_drive_model <-
         BAC_cent = BAC - median(BAC, na.rm = TRUE)
       ),
     formula = (
-      (Reaction_Frames_Pre_Press * (1000 / 60)) ~
+      (Reaction_Frames * (1000 / 60)) ~
       Lat_Dev_SD_Control +
-      KSS +
-      BAC +
+      KSS_cent +
+      BAC_cent +
       as.numeric(Drive) + # To adjust for learning effect
-      Lat_Dev_SD_Control * BAC +
+      Lat_Dev_SD_Control * BAC_cent +
       (1 | Subject)
     )
   )
@@ -519,10 +519,10 @@ summary(reaction_vs_latdev_by_drive_model)
 lat_dev_phase_model <- lmer(
   data = task_matrix,
   formula = Lat_Dev_SD ~
-    KSS +
-    BAC +
-    BAC * KSS +
-    #BAC * Phase +
+    KSS_cent +
+    BAC_cent +
+    BAC_cent * KSS_cent +
+    #BAC_cent * Phase +
     as.numeric(Drive) +
     Phase +
     (1 | Subject)
@@ -567,11 +567,11 @@ per_close_model <- lmer(
   data = task_matrix,
   formula = (
     Per_Close ~
-      KSS +
-      BAC +
+      KSS_cent +
+      BAC_cent +
       Phase +
-      BAC * KSS +
-      BAC * Phase +
+      BAC_cent * KSS_cent +
+      BAC_cent * Phase +
       as.numeric(Drive) + # To adjust for learning effect
       (1 | Subject)
   )
@@ -597,10 +597,10 @@ brake_force_model <- lmer(
   formula = (
     Brake_Force_mean ~
       Phase +
-      KSS +
-      BAC +
-      #BAC * Phase +
-      #BAC * KSS +
+      KSS_cent +
+      BAC_cent +
+      #BAC_cent * Phase +
+      #BAC_cent * KSS_cent +
       as.numeric(Drive) +
       (1 | Subject)
   )

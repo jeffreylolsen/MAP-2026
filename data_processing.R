@@ -247,6 +247,10 @@ task_matrix <- task_windows_with_control %>%
     Saccade_Count = sum(Eye_Event == "saccade" & lag(Eye_Event) != "saccade", na.rm = TRUE),
     Saccade_Prop = mean(Eye_Event == "saccade", na.rm = TRUE),
     .groups = "drop"
+  ) %>%
+  mutate(
+    BAC_cent = BAC - median(BAC, na.rm = TRUE),
+    KSS_cent = KSS - median(KSS, na.rm = TRUE)
   )
 rm(task_windows_with_control)
 
@@ -258,7 +262,7 @@ wideform_task_matrix <- task_matrix %>%
     names_from = Phase,
     values_from = setdiff(
       tail(colnames(task_matrix), -5),
-      c("BAC", "KSS")
+      c("BAC", "KSS", "BAC_cent", "KSS_cent", "Reaction_Frames")
     )
   ) %>%
   mutate(
