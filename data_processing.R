@@ -7,6 +7,7 @@ library(data.table)
 library(this.path)
 library(runner)
 library(qs2)
+library(glue)
 
 ### Read in DMS data
 
@@ -222,7 +223,7 @@ task_matrix <- task_windows_with_control %>%
     Avg_Pupil_Diameter_mean = mean(Avg_Pupil_Diameter, na.rm = TRUE),
     Gaze_Pitch_mean = mean(Gaze_Pitch, na.rm = TRUE),
     Gaze_Yaw_mean = mean(Gaze_Yaw, na.rm = TRUE),
-    Deviation_frames_prop = sum(
+    Deviation_Frames_prop = sum(
       abs(Vehicle_Lat_Dev) > Road_Width / lat_dev_sens
     ) / n(),
     BAC = Start_BAC[1],
@@ -262,36 +263,27 @@ wideform_task_matrix <- task_matrix %>%
       tail(colnames(task_matrix), -5),
       c("BAC", "KSS", "BAC_cent", "KSS_cent", "Reaction_Frames")
     )
-  ) %>%
-  mutate(
-    Avg_Pupil_Diameter_mean_diff = (
-      Avg_Pupil_Diameter_mean_Task - Avg_Pupil_Diameter_mean_Control
-    ),
-    RPupil_Diameter_mean_diff = (
-      RPupil_Diameter_mean_Task - RPupil_Diameter_mean_Control
-    ),
-    LPupil_Diameter_mean_diff = (
-      LPupil_Diameter_mean_Task - LPupil_Diameter_mean_Control
-    ),
-    Gaze_Yaw_mean_diff = (
-      Gaze_Yaw_mean_Task - Gaze_Yaw_mean_Control
-    ),
-    Gaze_Pitch_mean_diff = (
-      Gaze_Pitch_mean_Task - Gaze_Pitch_mean_Control
-    ),
-    Deviation_Frames_Prop_Diff = (
-      Deviation_frames_prop_Task - Deviation_frames_prop_Control
-    ),
-    Lat_Dev_SD_diff = (
-      Lat_Dev_SD_Task - Lat_Dev_SD_Control
-    ),
-    Speed_SD_diff = (
-      Speed_SD_Task - Speed_SD_Control
-    ),
-    Braking_Events_diff = (
-      Braking_Events_Task - Braking_Events_Control
-    ),
   )
 
-### Write environment
+metrics <- c(
+  "Deviation_Frames_prop",
+  "Avg_Pupil_Diameter_mean",
+  "RPupil_Diameter_mean",
+  "LPupil_Diameter_mean",
+  "Gaze_Yaw_mean",
+  "Gaze_Pitch_mean",
+  "Lat_Dev_SD",
+  "Speed_SD",
+  "Braking_Events"
+)
+for (metric in metrics) {
+  wideform_task_matrix <- wideform_task_matrix %>%
+    mutate(
+      "{metric}_diff" := .data[[glue("{metric}_Task")]] -
+        .data[[glue("{metric}_Control")]]
+    )
+}
+rm(metrics)
+
+# Write environment
 qs_save(as.list(environment()), "./data/processed_data.qs")

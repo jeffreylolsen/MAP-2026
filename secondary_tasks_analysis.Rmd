@@ -73,11 +73,10 @@ if (!file.exists("./data/processed_data.qs") |
 ## Models
 
 ```{r Models}
-
 # Model to compare Pupil_diff_avg in relation to press events
 # and lane deviation events
 
-model2 <- lmer(Deviation_Frames_Prop_Diff ~ factor(Drive) + (1 | Subject),
+model2 <- lmer(Deviation_Frames_prop_diff ~ factor(Drive) + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model2)
@@ -106,7 +105,7 @@ model_speed <- lmer(Speed_SD_diff ~ BAC_cent + KSS_cent + (1 | Subject),
 summary(model_speed)
 
 # Lane departure proportion difference (you already build this column)
-model_dev <- lmer(Deviation_Frames_Prop_Diff ~ BAC_cent + KSS_cent + (1 | Subject),
+model_dev <- lmer(Deviation_Frames_prop_diff ~ BAC_cent + KSS_cent + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model_dev)
@@ -123,14 +122,14 @@ print(t.test(wideform_task_matrix$Speed_SD_diff))
 
 ggplot(
   data = task_matrix,
-  aes(x = Deviation_frames_prop)
+  aes(x = Deviation_Frames_prop)
 ) +
   geom_density() +
   geom_vline(
     aes(xintercept = mean(filter(
       task_matrix,
       Drive == 1 & Phase == "Control"
-    )$Deviation_frames_prop)),
+    )$Deviation_Frames_prop)),
     linetype = "dashed"
   ) +
   facet_wrap(~ Drive + Phase, ncol = 3) +
@@ -143,10 +142,10 @@ ggplot(
 # Limit to tasks where there was at least one frame of deviation before or after
 ggplot(
   data = wideform_task_matrix %>% filter(
-    Deviation_frames_prop_Task != 0 |
-      Deviation_frames_prop_Control != 0
+    Deviation_Frames_prop_Task != 0 |
+      Deviation_Frames_prop_Control != 0
   ),
-  aes(x = Deviation_Frames_Prop_Diff)
+  aes(x = Deviation_Frames_prop_diff)
 ) +
   geom_density() +
   facet_wrap(~Drive) +
@@ -422,7 +421,7 @@ saccade_logit_model <- glmer(
       BAC_cent +
       KSS_cent +
       BAC_cent * KSS_cent +
-      #BAC_cent * Phase +
+      # BAC_cent * Phase +
       as.numeric(Drive) +
       Phase +
       (1 | Subject),
@@ -496,12 +495,12 @@ reaction_vs_latdev_by_drive_model <-
       ),
     formula = (
       (Reaction_Frames * (1000 / 60)) ~
-      Lat_Dev_SD_Control +
-      KSS_cent +
-      BAC_cent +
-      as.numeric(Drive) + # To adjust for learning effect
-      Lat_Dev_SD_Control * BAC_cent +
-      (1 | Subject)
+        Lat_Dev_SD_Control +
+        KSS_cent +
+        BAC_cent +
+        as.numeric(Drive) + # To adjust for learning effect
+        Lat_Dev_SD_Control * BAC_cent +
+        (1 | Subject)
     )
   )
 summary(reaction_vs_latdev_by_drive_model)
@@ -516,7 +515,7 @@ lat_dev_phase_model <- lmer(
     KSS_cent +
     BAC_cent +
     BAC_cent * KSS_cent +
-    #BAC_cent * Phase +
+    # BAC_cent * Phase +
     as.numeric(Drive) +
     Phase +
     (1 | Subject)
@@ -593,8 +592,8 @@ brake_force_model <- lmer(
       Phase +
       KSS_cent +
       BAC_cent +
-      #BAC_cent * Phase +
-      #BAC_cent * KSS_cent +
+      # BAC_cent * Phase +
+      # BAC_cent * KSS_cent +
       as.numeric(Drive) +
       (1 | Subject)
   )
