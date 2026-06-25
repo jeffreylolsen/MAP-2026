@@ -7,7 +7,7 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: ${{ format('autofmt-{0}', github.ref) }}
+  group: "autofmt-${{ github.ref_name }}"
   cancel-in-progress: true
 
 jobs:
@@ -55,10 +55,10 @@ jobs:
       - name: Create or update autofmt pull request
         uses: peter-evans/create-pull-request@v4
         with:
-          branch: ${{ format('autofmt/{0}', github.ref_name) }}
-          base: ${{ github.ref_name }}
-          title: chore: autofmt (black + notebooks + styler) for ${{ github.ref_name }}
-          commit-message: chore: autofmt (black + styler)
+          branch: "autofmt/${{ github.ref_name }}"
+          base: "${{ github.ref_name }}"
+          title: "chore: autofmt (black + notebooks + styler) for ${{ github.ref_name }}"
+          commit-message: "chore: autofmt (black + styler)"
           body: |
             Automated formatting fixes produced by the repo workflow.
           labels: autofmt
