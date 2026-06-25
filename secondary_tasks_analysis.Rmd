@@ -85,27 +85,27 @@ summary(model2)
 # averaged bilateral pupil reactivity,
 # controlling for individual baseline variance
 
-model3 <- lmer(Avg_Pupil_Diameter_mean_diff ~ BAC_cent + KSS_cent + (1 | Subject),
+model3 <- lmer(Avg_Pupil_Diameter_mean_diff ~ BAC + KSS_cent + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model3)
 
 # SDLP Model predicted by alcohol and fatigue
 
-model_sdlp <- lmer(Lat_Dev_SD_diff ~ BAC_cent + KSS_cent + (1 | Subject),
+model_sdlp <- lmer(Lat_Dev_SD_diff ~ BAC + KSS_cent + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model_sdlp)
 
 # Speed_SD_Diff model predicted by alcohol and fatigue
 
-model_speed <- lmer(Speed_SD_diff ~ BAC_cent + KSS_cent + (1 | Subject),
+model_speed <- lmer(Speed_SD_diff ~ BAC + KSS_cent + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model_speed)
 
 # Lane departure proportion difference (you already build this column)
-model_dev <- lmer(Deviation_Frames_prop_diff ~ BAC_cent + KSS_cent + (1 | Subject),
+model_dev <- lmer(Deviation_Frames_prop_diff ~ BAC + KSS_cent + (1 | Subject),
   data = wideform_task_matrix
 )
 summary(model_dev)
@@ -286,7 +286,7 @@ ggplot(
 
 pupil_diameter_diff_model <- lmer(
   Avg_Pupil_Diameter_mean_diff ~
-    BAC_cent +
+    BAC +
     KSS_cent +
     as.numeric(Drive) +
     (1 | Subject),
@@ -373,8 +373,8 @@ ggplot(task_matrix, aes(x = Saccade_Count)) +
   facet_wrap(~Phase)
 
 model_saccade_zip <- glmmTMB(
-  Saccade_Count ~ Phase + BAC_cent + KSS_cent + (1 | Subject),
-  ziformula = ~ Phase + BAC_cent, # What predicts being in the "zero" group?
+  Saccade_Count ~ Phase + BAC + KSS_cent + (1 | Subject),
+  ziformula = ~ Phase + BAC, # What predicts being in the "zero" group?
   family = poisson,
   data = task_matrix
 )
@@ -418,10 +418,10 @@ saccade_logit_model <- glmer(
   data = task_matrix,
   formula =
     (Saccade_Count > 0) ~
-      BAC_cent +
+      BAC +
       KSS_cent +
-      BAC_cent * KSS_cent +
-      # BAC_cent * Phase +
+      BAC * KSS_cent +
+      # BAC * Phase +
       as.numeric(Drive) +
       Phase +
       (1 | Subject),
@@ -446,7 +446,7 @@ was not better-fitting when accounting for the additional parameters.
 
 model_rt_driving <- lmer(
   (Reaction_Frames * (1000 / 60)) ~
-    BAC_cent +
+    BAC +
     KSS_cent +
     as.numeric(Drive) + # Drive term to adjust for learning effect
     (1 | Subject),
@@ -491,31 +491,31 @@ reaction_vs_latdev_by_drive_model <-
       mutate(
         Lat_Dev_SD_Control_cent = Lat_Dev_SD_Control -
           median(Lat_Dev_SD_Control, na.rm = TRUE),
-        BAC_cent = BAC - median(BAC, na.rm = TRUE)
+        BAC = BAC - median(BAC, na.rm = TRUE)
       ),
     formula = (
       (Reaction_Frames * (1000 / 60)) ~
         Lat_Dev_SD_Control +
         KSS_cent +
-        BAC_cent +
+        BAC +
         as.numeric(Drive) + # To adjust for learning effect
-        Lat_Dev_SD_Control * BAC_cent +
+        Lat_Dev_SD_Control * BAC +
         (1 | Subject)
     )
   )
 summary(reaction_vs_latdev_by_drive_model)
 ```
 
-## Lateral deviation by task segment
+## Lateral deviation SD by task segment
 
-```{r Lateral deviation by task segment}
+```{r Lateral deviation SD by task segment}
 lat_dev_phase_model <- lmer(
   data = task_matrix,
   formula = Lat_Dev_SD ~
     KSS_cent +
-    BAC_cent +
-    BAC_cent * KSS_cent +
-    # BAC_cent * Phase +
+    BAC +
+    BAC * KSS_cent +
+    # BAC * Phase +
     as.numeric(Drive) +
     Phase +
     (1 | Subject)
@@ -561,10 +561,10 @@ per_close_model <- lmer(
   formula = (
     Per_Close ~
       KSS_cent +
-      BAC_cent +
+      BAC +
       Phase +
-      BAC_cent * KSS_cent +
-      BAC_cent * Phase +
+      BAC * KSS_cent +
+      BAC * Phase +
       as.numeric(Drive) + # To adjust for learning effect
       (1 | Subject)
   )
@@ -591,9 +591,9 @@ brake_force_model <- lmer(
     Brake_Force_mean ~
       Phase +
       KSS_cent +
-      BAC_cent +
-      # BAC_cent * Phase +
-      # BAC_cent * KSS_cent +
+      BAC +
+      # BAC * Phase +
+      # BAC * KSS_cent +
       as.numeric(Drive) +
       (1 | Subject)
   )
