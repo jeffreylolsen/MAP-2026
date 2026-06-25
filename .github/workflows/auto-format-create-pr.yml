@@ -25,7 +25,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -54,7 +54,7 @@ jobs:
           Rscript -e 'styler::style_dir(".", filetype = c("R","Rmd"))'
 
       - name: Create or update autofmt pull request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v7
         with:
           branch: "autofmt/${{ github.ref_name }}"
           base: "${{ github.ref_name }}"
