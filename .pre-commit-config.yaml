@@ -1,0 +1,21 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.1.0
+    hooks:
+      - id: black
+        language_version: python3
+        files: \.py$
+
+  - repo: local
+    hooks:
+      - id: nbqa-black
+        name: nbqa-black
+        entry: bash -lc "git ls-files '*.ipynb' | xargs -r nbqa black"
+        language: script
+        files: '\.ipynb$'
+
+      - id: r-styler
+        name: r-styler
+        entry: Rscript -e "options(repos = c(CRAN='https://cloud.r-project.org')); if (!requireNamespace('styler', quietly=TRUE)) install.packages('styler'); styler::style_dir('.', filetype = c('R','Rmd'))"
+        language: script
+        files: '\.(R|r|Rmd|rmd)$'

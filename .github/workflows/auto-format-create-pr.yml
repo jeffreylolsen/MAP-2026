@@ -1,0 +1,65 @@
+name: Auto-format & open/update PR (black + notebooks + styler)
+
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch: {}
+
+concurrency:
+  group: autofmt-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  autofmt:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Python tools (black + nb wrapper)
+        run: |
+          python -m pip install --upgrade pip
+          pip install black==24.1.0 nbqa==1.6.0
+
+      - name: Run black on Python files
+        run: |
+          black .
+
+      - name: Run black on tracked Jupyter notebooks via nbqa
+        run: |
+          git ls-files '*.ipynb' | xargs -r nbqa black
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Install styler
+        run: |
+          Rscript -e 'options(repos = c(CRAN = "https://cloud.r-project.org")); if (!requireNamespace("styler", quietly = TRUE)) install.packages("styler")'
+
+      - name: Run styler (formats R & Rmd)
+        run: |
+          Rscript -e 'styler::style_dir(".", filetype = c("R","Rmd"))'
+
+      - name: Create or update autofmt pull request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          branch: autofmt/${{ github.ref_name }}
+          base: ${{ github.ref_name }}
+          title: chore: autofmt (black + notebooks + styler) for ${{ github.ref_name }}
+          commit-message: chore: autofmt (black + styler)
+          body: |
+            Automated formatting fixes produced by the repo workflow.
+          labels: autofmt
+          update: true
