@@ -7,12 +7,12 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: autofmt-${{ github.ref }}
+  group: ${{ format('autofmt-{0}', github.ref) }}
   cancel-in-progress: true
 
 jobs:
   autofmt:
-    if: github.actor != 'github-actions[bot]'
+    if: ${{ github.actor != 'github-actions[bot]' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -28,7 +28,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Python tools (black + nb wrapper)
+      - name: Install Python tools (black + nbqa)
         run: |
           python -m pip install --upgrade pip
           pip install black==24.1.0 nbqa==1.6.0
@@ -55,7 +55,7 @@ jobs:
       - name: Create or update autofmt pull request
         uses: peter-evans/create-pull-request@v4
         with:
-          branch: autofmt/${{ github.ref_name }}
+          branch: ${{ format('autofmt/{0}', github.ref_name) }}
           base: ${{ github.ref_name }}
           title: chore: autofmt (black + notebooks + styler) for ${{ github.ref_name }}
           commit-message: chore: autofmt (black + styler)
