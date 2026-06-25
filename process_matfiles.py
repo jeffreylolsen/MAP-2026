@@ -54,25 +54,32 @@ for i in range(0, reduced_disp.shape[0] - 1):
 
     ## Full lat pos (of vehicle) series (shaped differently so taken differently)
     ## And road width to compare to lane deviation
-    variable_series["Vehicle_Lat_Dev"] = (
-        data["elemDataI"]["SCC_Lane_Deviation"][0][0][:, 1]
-        .flatten()
-    )
-    variable_series["Road_Width"] = (
-        data["elemDataI"]["SCC_Lane_Deviation"][0][0][:, 2]
-        .flatten()
-    )
-    
+    variable_series["Vehicle_Lat_Dev"] = data["elemDataI"]["SCC_Lane_Deviation"][0][0][
+        :, 1
+    ].flatten()
+    variable_series["Road_Width"] = data["elemDataI"]["SCC_Lane_Deviation"][0][0][
+        :, 2
+    ].flatten()
+
     # Code task availability from LogStream
     variable_series["Task_Available_raw"] = (
-        data["elemDataI"]["SCC_LogStreams"][0][0][:, 2]
-        .flatten().astype(int)
+        data["elemDataI"]["SCC_LogStreams"][0][0][:, 2].flatten().astype(int)
     )
-    variable_series["Task_Available"] = variable_series["Task_Available_raw"].astype(str)
-    variable_series["Task_Available"][variable_series["Task_Available_raw"] <= 1] = "None"
-    variable_series["Task_Available"][variable_series["Task_Available_raw"] == 2] = "Distractor"
-    variable_series["Task_Available"][variable_series["Task_Available_raw"] == 4] = "Left"
-    variable_series["Task_Available"][variable_series["Task_Available_raw"] == 5] = "Right"
+    variable_series["Task_Available"] = variable_series["Task_Available_raw"].astype(
+        str
+    )
+    variable_series["Task_Available"][
+        variable_series["Task_Available_raw"] <= 1
+    ] = "None"
+    variable_series["Task_Available"][
+        variable_series["Task_Available_raw"] == 2
+    ] = "Distractor"
+    variable_series["Task_Available"][
+        variable_series["Task_Available_raw"] == 4
+    ] = "Left"
+    variable_series["Task_Available"][
+        variable_series["Task_Available_raw"] == 5
+    ] = "Right"
     variable_series.pop("Task_Available_raw")
 
     # Get number of frames
