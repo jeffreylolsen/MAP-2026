@@ -54,26 +54,40 @@ for i in range(0, reduced_disp.shape[0] - 1):
 
     ## Full lat pos (of vehicle) series (shaped differently so taken differently)
     ## And road width to compare to lane deviation
-    variable_series["Vehicle_Lat_Dev"] = (
-        data["elemDataI"]["SCC_Lane_Deviation"][0][0][:, 1]
-        .flatten()
-    )
-    variable_series["Road_Width"] = (
-        data["elemDataI"]["SCC_Lane_Deviation"][0][0][:, 2]
-        .flatten()
-    )
-    
+    variable_series["Vehicle_Lat_Dev"] = data["elemDataI"]["SCC_Lane_Deviation"][0][0][
+        :, 1
+    ].flatten()
+    variable_series["Road_Width"] = data["elemDataI"]["SCC_Lane_Deviation"][0][0][
+        :, 2
+    ].flatten()
+
     # Code task availability from LogStream
-    variable_series["Task_Available_raw"] = (
-        data["elemDataI"]["SCC_LogStreams"][0][0][:, 2]
-        .flatten().astype(int)
+    variable_series["Task_Available"] = (
+        pd.Series(data["elemDataI"]["SCC_LogStreams"][0][0][:, 2].flatten().astype(int))
+        .map(
+            pd.read_excel(
+                "./variable_maps.xlsx",
+                sheet_name="Task_Available",
+                keep_default_na=False,
+                index_col="key",
+            ).to_dict()["value"]
+        )
+        .fillna("None")
     )
-    variable_series["Task_Available"] = variable_series["Task_Available_raw"].astype(str)
-    variable_series["Task_Available"][variable_series["Task_Available_raw"] <= 1] = "None"
-    variable_series["Task_Available"][variable_series["Task_Available_raw"] == 2] = "Distractor"
-    variable_series["Task_Available"][variable_series["Task_Available_raw"] == 4] = "Left"
-    variable_series["Task_Available"][variable_series["Task_Available_raw"] == 5] = "Right"
-    variable_series.pop("Task_Available_raw")
+
+    # Code event names from LogStream
+    variable_series["EventName"] = (
+        pd.Series(data["elemDataI"]["SCC_LogStreams"][0][0][:, 1].flatten().astype(int))
+        .map(
+            pd.read_excel(
+                "./variable_maps.xlsx",
+                sheet_name="EventName",
+                keep_default_na=False,
+                index_col="key",
+            ).to_dict()["value"]
+        )
+        .fillna("None")
+    )
 
     # Get number of frames
     nstep = variable_series["Vehicle_Lat_Dev"].shape[0]
@@ -140,6 +154,7 @@ final_df["Subject"] = final_df["Subject"].astype("category")
 final_df["Drive"] = final_df["Drive"].astype("category")
 final_df["Sample_ID"] = final_df["Sample_ID"].astype("category")
 final_df["Task_Available"] = final_df["Task_Available"].astype("category")
+final_df["EventName"] = final_df["EventName"].astype("category")
 
 print("Writing output...")
 final_df.to_feather("./data/non_aug_data.feather")
