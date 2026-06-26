@@ -178,7 +178,7 @@ ggplot(
   theme(legend.position = "NONE")
 ```
 
-## Box plots to compare pre & post tasks
+## Box plots to compare control & task phases
 
 ```{r Box Plots for task matrix}
 plot_data <- task_matrix %>% filter(!is.na(Avg_Pupil_Diameter_mean))
@@ -431,8 +431,8 @@ summary(saccade_logit_model)
 ```
 
 Including an interaction term between BAC and Phase, there was no evidence
-($p = 0.196$) that the the effect of BAC on saccades is less (in magnitude) in
-the post-task segment than in the control group.
+($p = 0.11$) that the the effect of BAC on saccades is less (in magnitude) in
+the task segment than in the control group.
 There was no evidence to suggest a difference in BAC effect on saccades
 between the control and pre-task segments.
 
@@ -487,12 +487,7 @@ wideform_task_matrix %>%
 
 reaction_vs_latdev_by_drive_model <-
   lmer(
-    data = wideform_task_matrix %>%
-      mutate(
-        Lat_Dev_SD_Control_cent = Lat_Dev_SD_Control -
-          median(Lat_Dev_SD_Control, na.rm = TRUE),
-        BAC = BAC - median(BAC, na.rm = TRUE)
-      ),
+    data = wideform_task_matrix,
     formula = (
       (Reaction_Frames * (1000 / 60)) ~
         Lat_Dev_SD_Control +
@@ -515,7 +510,7 @@ lat_dev_phase_model <- lmer(
     KSS_cent +
     BAC +
     BAC * KSS_cent +
-    # BAC * Phase +
+    BAC * Phase +
     as.numeric(Drive) +
     Phase +
     (1 | Subject)
@@ -523,8 +518,8 @@ lat_dev_phase_model <- lmer(
 summary(lat_dev_phase_model)
 ```
 
-There is moderate evidence to suggest that the effect of either
-KSS or BAC on SDLP is lessened as the other increases.
+There is strong evidence to suggest that the effect of
+BAC on SDLP is lessened as KSS increases.
 
 There is no evidence that the effect of BAC on SDLP differs by task segment
 $(p > 0.6)$ for each task phase vs control.
@@ -580,7 +575,7 @@ it's important to consider if Drive is absorbing the "fatigue effect"
 that should increase `Per_Close` with both KSS and Drive.
 There is no evidence of a significant BAC:Phase interaction,
 but, similarly to the saccade logit model, there is more evidence of a
-difference in BAC effect between control and post-task segments.
+difference in BAC effect between control and task segments.
 
 ## Brake force analysis
 
@@ -592,8 +587,8 @@ brake_force_model <- lmer(
       Phase +
       KSS_cent +
       BAC +
-      # BAC * Phase +
-      # BAC * KSS_cent +
+      BAC * Phase +
+      BAC * KSS_cent +
       as.numeric(Drive) +
       (1 | Subject)
   )
@@ -601,5 +596,6 @@ brake_force_model <- lmer(
 summary(brake_force_model)
 ```
 
-A greater BAC is associated with lower average brake force.
 Interaction terms BAC:Phase and BAC:KSS are not statistically significant.
+Since changing from a three-segment to a two segment model,
+the effect of BAC on brake force is no longer statistically significant.
