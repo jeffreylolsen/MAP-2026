@@ -543,7 +543,7 @@ task_matrix %>%
   drop_na(Per_Close, KSS) %>%
   group_by(Drive, KSS) %>%
   summarize(
-    Per_Close = mean(Per_Close) * (1000 / 60),
+    Per_Close = mean(Per_Close),
     Total_tasks = n(),
     .groups = "drop"
   ) %>%
