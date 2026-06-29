@@ -113,6 +113,8 @@ summary(model_dev)
 print(t.test(wideform_task_matrix$Avg_Pupil_Diameter_mean_diff))
 print(t.test(wideform_task_matrix$Lat_Dev_SD_diff))
 print(t.test(wideform_task_matrix$Speed_SD_diff))
+print(t.test(wideform_task_matrix$Per_Close_diff))
+print(t.test(wideform_task_matrix$Brake_Force_mean_diff))
 ```
 
 ## Preliminary lane deviation analysis

@@ -295,7 +295,9 @@ metrics <- c(
   "Gaze_Pitch_mean",
   "Lat_Dev_SD",
   "Speed_SD",
-  "Braking_Events"
+  "Braking_Events",
+  "Per_Close",
+  "Brake_Force_mean"
 )
 for (metric in metrics) {
   wideform_task_matrix <- wideform_task_matrix %>%
