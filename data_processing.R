@@ -52,13 +52,13 @@ non_aug$Avg_Pupil_Diameter <- (non_aug$RPupil_Diameter +
   non_aug$LPupil_Diameter) / 2
 
 # Rolling SD of vehicle lateral deviation
-non_aug <- non_aug %>%
-  group_by(DaqName) %>%
-  mutate(Vehicle_Lat_Dev_rolling_sd3 = runner(
-    Vehicle_Lat_Dev, sd,
-    k = 180, na_pad = FALSE, na.rm = TRUE
-  )) %>%
-  ungroup()
+# non_aug <- non_aug %>%
+#  group_by(DaqName) %>%
+#  mutate(Vehicle_Lat_Dev_rolling_sd3 = runner(
+#    Vehicle_Lat_Dev, sd,
+#    k = 180, na_pad = FALSE, na.rm = TRUE
+#  )) %>%
+#  ungroup()
 
 # Get `ST_*` columns
 
@@ -108,7 +108,9 @@ non_saccades <- detect.fixations(
       x = Gaze_Yaw,
       y = Gaze_Pitch,
       time = X
-    )
+    ),
+  lambda = 15,
+  smooth.coordinates = TRUE
 )
 
 # Add column to `non_aug` for eye event type
@@ -125,13 +127,21 @@ non_aug$Eye_Event[flattened_indices] <- rep(
 non_aug[is.na(non_aug$Eye_Event), "Eye_Event"] <- "saccade"
 rm(non_saccades, indices, flattened_indices)
 
-### Aggregate matrix
+# First frame of task availability
 non_aug <- non_aug %>%
   group_by(consecutive_id(Task_Available)) %>%
   mutate(Task_Start_X = first(X)) %>%
   ungroup()
 non_aug$`consecutive_id(Task_Available)` <- NULL
 
+# Filter to rural straight, gravel, and dark segments
+non_aug <- non_aug %>% filter(EventName %in% c(
+  "RuralStraight",
+  "Gravel",
+  "Dark"
+))
+
+### Aggregate matrix
 # Sensitivity of lateral deviation
 lat_dev_sens <- 4
 
@@ -241,6 +251,10 @@ task_matrix <- task_windows_with_control %>%
       na.rm = TRUE
     ),
     Saccade_Prop = mean(Eye_Event == "saccade", na.rm = TRUE),
+    Road_Surface = ifelse(names(which.max(table(EventName))) != "Gravel",
+      "Paved",
+      "Gravel"
+    ),
     Frame_Count = n(),
     .groups = "drop"
   ) %>%
@@ -261,7 +275,13 @@ wideform_task_matrix <- task_matrix %>%
     names_from = Phase,
     values_from = setdiff(
       tail(colnames(task_matrix), -5),
-      c("BAC", "KSS", "BAC_cent", "KSS_cent", "Reaction_Frames")
+      c(
+        "BAC",
+        "KSS",
+        "BAC_cent",
+        "KSS_cent",
+        "Reaction_Frames"
+      )
     )
   )
 
