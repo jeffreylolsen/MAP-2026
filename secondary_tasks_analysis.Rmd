@@ -380,7 +380,7 @@ ggplot(task_matrix, aes(x = Saccade_Count)) +
 
 model_saccade_zip <- glmmTMB(
   Saccade_Count ~ Phase + BAC + KSS_cent + Road_Surface + (1 | Subject),
-  ziformula = ~ Phase + BAC, # What predicts being in the "zero" group?
+  ziformula = ~ 1, # What predicts being in the "zero" group?
   family = poisson,
   data = task_matrix
 )
