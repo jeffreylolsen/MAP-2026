@@ -373,7 +373,7 @@ ggplot(task_matrix, aes(x = Saccade_Count)) +
   facet_wrap(~Phase)
 
 model_saccade_zip <- glmmTMB(
-  Saccade_Count ~ Phase + BAC + KSS_cent + (1 | Subject),
+  Saccade_Count ~ Phase + BAC + KSS_cent + Road_Surface + (1 | Subject),
   ziformula = ~ Phase + BAC, # What predicts being in the "zero" group?
   family = poisson,
   data = task_matrix
@@ -420,6 +420,7 @@ saccade_logit_model <- glmer(
     (Saccade_Count > 0) ~
       BAC +
       KSS_cent +
+      Road_Surface +
       BAC * KSS_cent +
       # BAC * Phase +
       as.numeric(Drive) +
@@ -448,6 +449,7 @@ model_rt_driving <- lmer(
   (Reaction_Frames * (1000 / 60)) ~
     BAC +
     KSS_cent +
+    Road_Surface +
     as.numeric(Drive) + # Drive term to adjust for learning effect
     (1 | Subject),
   data = wideform_task_matrix
@@ -493,6 +495,7 @@ reaction_vs_latdev_by_drive_model <-
         Lat_Dev_SD_Control +
         KSS_cent +
         BAC +
+        Road_Surface +
         as.numeric(Drive) + # To adjust for learning effect
         Lat_Dev_SD_Control * BAC +
         (1 | Subject)
@@ -511,6 +514,7 @@ lat_dev_phase_model <- lmer(
     BAC +
     BAC * KSS_cent +
     BAC * Phase +
+    Road_Surface +
     as.numeric(Drive) +
     Phase +
     (1 | Subject)
@@ -560,6 +564,7 @@ per_close_model <- lmer(
       Phase +
       BAC * KSS_cent +
       BAC * Phase +
+      Road_Surface +
       as.numeric(Drive) + # To adjust for learning effect
       (1 | Subject)
   )
@@ -589,6 +594,7 @@ brake_force_model <- lmer(
       BAC +
       BAC * Phase +
       BAC * KSS_cent +
+      Road_Surface +
       as.numeric(Drive) +
       (1 | Subject)
   )

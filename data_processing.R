@@ -280,7 +280,8 @@ wideform_task_matrix <- task_matrix %>%
         "KSS",
         "BAC_cent",
         "KSS_cent",
-        "Reaction_Frames"
+        "Reaction_Frames",
+        "Road_Surface" # Empirically, both segments always have same road surface
       )
     )
   )
