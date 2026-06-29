@@ -132,7 +132,7 @@ ggplot(
     )$Deviation_Frames_prop)),
     linetype = "dashed"
   ) +
-  facet_wrap(~ Drive + Phase, ncol = 3) +
+  facet_wrap(~ Drive + Phase, ncol = 2) +
   xlim(0, 1)
 ```
 
@@ -334,13 +334,16 @@ task_matrix %>%
     Total_tasks = n(),
     .groups = "drop"
   ) %>%
+  complete(KSS, Drive) %>%
   {
     ggplot(
       data = .,
       aes(y = factor(KSS), x = Drive)
     ) +
       geom_tile(aes(fill = Reaction_Time)) +
-      scale_fill_gradient(low = "royalblue", high = "springgreen") +
+      scale_fill_gradient(low = "royalblue", high = "springgreen", na.value = "gray") +
+      coord_cartesian(expand = FALSE) +
+      theme_minimal() +
       labs(x = "Drive", y = "KSS score", fill = "Reaction time (ms)")
   }
 
@@ -541,18 +544,21 @@ task_matrix %>%
     Total_tasks = n(),
     .groups = "drop"
   ) %>%
+  complete(Drive, KSS) %>%
   {
     ggplot(
       data = .,
       aes(y = factor(KSS), x = Drive)
     ) +
       geom_tile(aes(fill = Per_Close)) +
-      scale_fill_gradient(low = "royalblue", high = "springgreen") +
+      scale_fill_gradient(low = "royalblue", high = "springgreen", na.value = "gray") +
       labs(
         x = "Drive",
         y = "KSS score",
         fill = "Proportion of time with eyes closed"
-      )
+      ) +
+      coord_cartesian(expand = FALSE) +
+      theme_minimal()
   }
 
 per_close_model <- lmer(
