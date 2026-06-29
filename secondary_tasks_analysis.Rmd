@@ -73,8 +73,8 @@ if (!file.exists("./data/processed_data.qs") |
 ## Models
 
 ```{r Models}
-# Model to compare Pupil_diff_avg in relation to press events
-# and lane deviation events
+# Fit mixed-effects model to predict deviation differences
+# across drives, with random intercepts for subjects
 
 model2 <- lmer(Deviation_Frames_prop_diff ~ factor(Drive) + (1 | Subject),
   data = wideform_task_matrix
@@ -110,6 +110,7 @@ model_dev <- lmer(Deviation_Frames_prop_diff ~ BAC + KSS_cent + (1 | Subject),
 )
 summary(model_dev)
 
+print(t.test(wideform_task_matrix$Avg_Pupil_Diameter_mean_diff))
 print(t.test(wideform_task_matrix$Lat_Dev_SD_diff))
 print(t.test(wideform_task_matrix$Speed_SD_diff))
 ```
