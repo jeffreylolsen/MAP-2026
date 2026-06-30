@@ -34,6 +34,7 @@ library(mgcv)
 library(data.table)
 library(this.path)
 library(glmmTMB)
+library(sjPlot)
 library(plotly)
 library(qs2)
 library(downloadthis)
@@ -333,7 +334,7 @@ task_matrix %>%
   drop_na(KSS) %>%
   group_by(Drive, KSS) %>%
   summarize(
-    Reaction_Time = mean(Reaction_Frames) * (1000 / 60),
+    Reaction_Time = median(Reaction_Frames) * (1000 / 60),
     Total_tasks = n(),
     .groups = "drop"
   ) %>%
@@ -380,7 +381,7 @@ ggplot(task_matrix, aes(x = Saccade_Count)) +
 
 model_saccade_zip <- glmmTMB(
   Saccade_Count ~ Phase + BAC + KSS_cent + Road_Surface + (1 | Subject),
-  ziformula = ~ 1, # What predicts being in the "zero" group?
+  ziformula = ~1, # What predicts being in the "zero" group?
   family = poisson,
   data = task_matrix
 )
@@ -526,6 +527,15 @@ lat_dev_phase_model <- lmer(
     (1 | Subject)
 )
 summary(lat_dev_phase_model)
+confint(lat_dev_phase_model)
+plot_model(lat_dev_phase_model,
+  type = "pred",
+  terms = c("BAC", "KSS_cent"),
+  ci.lvl = NA,
+  axis.title = c("BrAC", "SDLP"),
+  legend.title = "KSS - 5\n(median centered)",
+  title = "Interaction plot: SDLP vs BrAC"
+)
 ```
 
 There is strong evidence to suggest that the effect of
@@ -543,7 +553,7 @@ task_matrix %>%
   drop_na(Per_Close, KSS) %>%
   group_by(Drive, KSS) %>%
   summarize(
-    Per_Close = mean(Per_Close),
+    Per_Close = median(Per_Close),
     Total_tasks = n(),
     .groups = "drop"
   ) %>%
@@ -558,14 +568,16 @@ task_matrix %>%
       labs(
         x = "Drive",
         y = "KSS score",
-        fill = "Proportion of time with eyes closed"
+        fill = "Proportion of time\nwith eyes closed"
       ) +
       coord_cartesian(expand = FALSE) +
       theme_minimal()
   }
 
-per_close_model <- lmer(
-  data = task_matrix,
+per_close_model <- glmmTMB(
+  # A single observation of Per_Close = 1,
+  # not likely to be seen frequently in population data
+  data = filter(task_matrix, Per_Close != 1),
   formula = (
     Per_Close ~
       KSS_cent +
@@ -576,9 +588,12 @@ per_close_model <- lmer(
       Road_Surface +
       as.numeric(Drive) + # To adjust for learning effect
       (1 | Subject)
-  )
+  ),
+  ziformula = ~1,
+  family = beta_family()
 )
 summary(per_close_model)
+confint(per_close_model)
 ```
 
 While there is no significant difference in `Per_Close` by task phase,
