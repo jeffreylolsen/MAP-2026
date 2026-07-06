@@ -142,8 +142,8 @@ non_aug <- non_aug %>% filter(EventName %in% c(
 ))
 
 ### Aggregate matrix
-# Sensitivity of lateral deviation
-lat_dev_sens <- 4
+# Sensitivity of lateral deviation (Road width / sens is the threshold)
+lat_dev_sens <- 4 # 12 / 4 = 3 foot threshold
 
 # Number of frames to add to task segments on top of reaction time
 frame_length <- 300
@@ -233,6 +233,7 @@ task_matrix <- task_windows_with_control %>%
     Avg_Pupil_Diameter_mean = mean(Avg_Pupil_Diameter, na.rm = TRUE),
     Gaze_Pitch_mean = mean(Gaze_Pitch, na.rm = TRUE),
     Gaze_Yaw_mean = mean(Gaze_Yaw, na.rm = TRUE),
+    Lane_Departure = any(abs(Vehicle_Lat_Dev) > Road_Width / lat_dev_sens),
     Deviation_Frames_prop = sum(
       abs(Vehicle_Lat_Dev) > Road_Width / lat_dev_sens
     ) / n(),
