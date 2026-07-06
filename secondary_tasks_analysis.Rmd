@@ -517,6 +517,7 @@ summary(reaction_vs_latdev_by_drive_model)
 lat_dev_phase_model <- lmer(
   data = task_matrix,
   formula = Lat_Dev_SD ~
+    Lat_Dev_abs_init +
     KSS_cent +
     BAC +
     BAC * KSS_cent +

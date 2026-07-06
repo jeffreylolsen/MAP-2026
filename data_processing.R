@@ -241,6 +241,8 @@ task_matrix <- task_windows_with_control %>%
     Blink_Count = max(Blink_Counter) - min(Blink_Counter),
     # Per close is the proportion that **both eyes are closed simultaneously**
     Per_Close = mean(Blinking, na.rm = TRUE),
+    # Initial lateral deviation affects SDLP since they are expected to correct
+    Lat_Dev_abs_init = Vehicle_Lat_Dev[1],
     Lat_Dev_SD = sd(Vehicle_Lat_Dev, na.rm = TRUE),
     Speed_SD = sd(Vehicle_Speed, na.rm = TRUE),
     Braking_Events = sum(lag(Brake_Pedal_Force) == 0 & Brake_Pedal_Force > 0,
