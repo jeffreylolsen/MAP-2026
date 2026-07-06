@@ -545,6 +545,25 @@ BAC on SDLP is lessened as KSS increases.
 There is no evidence that the effect of BAC on SDLP differs by task segment
 $(p > 0.6)$ for each task phase vs control.
 
+## Lane departure logit
+
+```{r Lane departure logit}
+lane_departure_model <- glmer(
+  data = task_matrix,
+  formula = (
+    Lane_Departure ~
+      BAC +
+      KSS_cent +
+      Phase
+      Phase +
+      Road_Surface +
+      as.numeric(Drive) +
+      (1 | Subject)
+  ),
+  family = "binomial"
+)
+summary(lane_departure_model)
+```
 
 ## `Per_Close` analysis
 
