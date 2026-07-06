@@ -71,9 +71,9 @@ if (!file.exists("./data/processed_data.qs") |
 }
 ```
 
-## Models
+## Preliminary models
 
-```{r Models}
+```{r Preliminary models}
 # Fit mixed-effects model to predict deviation differences
 # across drives, with random intercepts for subjects
 
@@ -370,9 +370,9 @@ wideform_task_matrix %>%
 Currently samples 10 drivers. In the future we could group them by
 some trait and aggregate across drivers within groups.
 
-## Zero-inflated poisson model for saccades
+## Saccades ZIP model
 
-```{r Saccade Zero Inflation}
+```{r Saccades ZIP model}
 #| out.width = "100%"
 
 ggplot(task_matrix, aes(x = Saccade_Count)) +
@@ -388,9 +388,9 @@ model_saccade_zip <- glmmTMB(
 summary(model_saccade_zip)
 ```
 
-## Visualization for zero-saccade windows by drive
+## Saccade binary visualizations
 
-```{r Visualization for zero-saccade windows by drive}
+```{r Saccade binary visualizations}
 task_matrix %>%
   mutate(Zero_Saccade = Saccade_Count == 0) %>%
   group_by(Drive, Phase) %>%
@@ -418,9 +418,9 @@ task_matrix %>%
   theme_minimal()
 ```
 
-## Modeling whether a saccade occurs in a task window
+## Saccade logit
 
-```{r Modeling whether a saccade occurs in a task window}
+```{r Saccade logit}
 saccade_logit_model <- glmer(
   data = task_matrix,
   formula =
@@ -447,9 +447,9 @@ between the control and pre-task segments.
 A similar model with an interaction term between phase and drive number
 was not better-fitting when accounting for the additional parameters.
 
-## Control frame driving stability and reaction time
+## Reaction time by SDLP prior to task
 
-```{r Control frame driving stability and reaction time plot and model}
+```{r Reaction time by SDLP prior to task}
 #| out.width = "100%"
 
 model_rt_driving <- lmer(
@@ -511,9 +511,9 @@ reaction_vs_latdev_by_drive_model <-
 summary(reaction_vs_latdev_by_drive_model)
 ```
 
-## Lateral deviation SD by task segment
+## SDLP by task segment
 
-```{r Lateral deviation SD by task segment}
+```{r SDLP by task segment}
 lat_dev_phase_model <- lmer(
   data = task_matrix,
   formula = Lat_Dev_SD ~
