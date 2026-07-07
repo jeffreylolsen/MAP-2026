@@ -41,6 +41,8 @@ library(modelsummary)
 library(plotly)
 library(qs2)
 library(downloadthis)
+
+dir.create("./output", showWarnings = FALSE)
 ```
 
 <div style="text-align: center;">
@@ -77,20 +79,27 @@ if (!file.exists("./data/processed_data.qs") |
 ```{r Helpers}
 #| include = FALSE
 
-generate_table <- function(model, title) {
+generate_table <- function(
+  model,
+  title,
+  shape = term ~ statistic,
+  align = "lrcrc",
+  ...
+) {
   modelsummary(
     list(" " = model),
+    ...,
     title = title,
     output = "latex",
     stars = TRUE,
-    shape = term ~ statistic,
+    shape = shape,
     estimate = c("Estimate" = "{estimate}"),
     statistic = c(
       "95\\symbol{37} CI" = "({conf.low}, {conf.high})",
       "p-value" = "{p.value}",
       " " = "{stars}"
     ),
-    align = "lrcrc",
+    align = align,
     coef_rename = c(
       "(Intercept)" = "Intercept",
       "BAC" = "BrAC",
@@ -98,7 +107,8 @@ generate_table <- function(model, title) {
       "PhaseTask" = "Phase (Task)",
       "Road_SurfacePaved" = "Road surface (Paved)",
       "as.numeric(Drive)" = "Drive \\#",
-      "SD (Intercept Subject)" = "Subject intercept SD"
+      "SD (Intercept Subject)" = "Subject intercept SD",
+      "Lat_Dev_abs_init" = "Initial lateral deviation"
     ),
     gof_map = data.frame(
       raw = c("nobs", "r2.marginal", "r2.conditional"),
@@ -107,7 +117,18 @@ generate_table <- function(model, title) {
     ),
     escape = FALSE,
     notes = list("+ p < 0.1, * p < 0.05, ** p < 0.01, *** p < 0.001")
-  )
+  ) %>%
+    as.character() %>%
+    str_replace_all(
+      c(
+        "component" = "Component",
+        "conditional" = "Conditional",
+        "zero_inflated" = "Zero-inflated",
+        "dispersion" = "Dispersion"
+      )
+    ) %>%
+    write_lines(glue("./output/{str_replace_all(title, ' ', '_')}.tex"))
+  write_lines(glue("./output/{str_replace_all(title, ' ', '_')}.tex"))
 }
 ```
 
@@ -386,7 +407,11 @@ task_matrix %>%
       aes(y = factor(KSS), x = Drive)
     ) +
       geom_tile(aes(fill = Reaction_Time)) +
-      scale_fill_gradient(low = "royalblue", high = "springgreen", na.value = "gray") +
+      scale_fill_gradient(
+        low = "royalblue",
+        high = "springgreen",
+        na.value = "gray"
+      ) +
       coord_cartesian(expand = FALSE) +
       theme_minimal() +
       labs(x = "Drive", y = "KSS score", fill = "Reaction time (ms)")
@@ -604,7 +629,6 @@ lane_departure_model <- glmer(
   family = "binomial"
 )
 summary(lane_departure_model)
-print(generate_table(lane_departure_model, "Lane departure logit"))
 ```
 
 ## `Per_Close` analysis
@@ -626,7 +650,11 @@ task_matrix %>%
       aes(y = factor(KSS), x = Drive)
     ) +
       geom_tile(aes(fill = Per_Close)) +
-      scale_fill_gradient(low = "royalblue", high = "springgreen", na.value = "gray") +
+      scale_fill_gradient(
+        low = "royalblue",
+        high = "springgreen",
+        na.value = "gray"
+      ) +
       labs(
         x = "Drive",
         y = "KSS score",
@@ -691,3 +719,24 @@ summary(brake_force_model)
 Interaction terms BAC:Phase and BAC:KSS are not statistically significant.
 Since changing from a three-segment to a two segment model,
 the effect of BAC on brake force is no longer statistically significant.
+
+```{r Generate visuals for paper}
+generate_table(
+  lat_dev_phase_model,
+  "SDLP linear model"
+)
+generate_table(
+  lane_departure_model,
+  "Lane departure logit model"
+)
+generate_table(
+  per_close_model,
+  "Per Close beta model",
+  shape = component + term ~ statistic,
+  align = "llrcrc"
+)
+generate_table(
+  saccade_logit_model,
+  "Saccade logit model"
+)
+```
