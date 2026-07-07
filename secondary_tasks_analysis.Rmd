@@ -38,6 +38,7 @@ library(sjPlot)
 library(performance)
 library(visreg)
 library(modelsummary)
+library(emmeans)
 library(plotly)
 library(qs2)
 library(downloadthis)
@@ -128,7 +129,6 @@ generate_table <- function(
       )
     ) %>%
     write_lines(glue("./output/{str_replace_all(title, ' ', '_')}.tex"))
-  write_lines(glue("./output/{str_replace_all(title, ' ', '_')}.tex"))
 }
 ```
 
@@ -598,7 +598,7 @@ confint(lat_dev_phase_model)
 plot_model(lat_dev_phase_model,
   type = "pred",
   terms = c("BAC", "KSS_cent"),
-  ci.lvl = NA,
+  ci.lvl = 0.95,
   axis.title = c("BrAC", "SDLP"),
   legend.title = "KSS - 5\n(median centered)",
   title = "Interaction plot: SDLP vs BrAC"
@@ -739,4 +739,28 @@ generate_table(
   saccade_logit_model,
   "Saccade logit model"
 )
+
+# BrAC slope by KSS score
+per_close_kss_bac_coef_plot <- emtrends(
+  object = per_close_model,
+  data = filter(task_matrix, Per_Close != 1),
+  specs = ~KSS_cent,
+  var = "BAC",
+  at = list(KSS_cent = -4:4),
+  component = "cond"
+) %>%
+  as.data.frame() %>%
+  mutate(KSS = KSS_cent + abs(min(KSS_cent)) + 1) %>%
+  ggplot(aes(x = KSS, y = BAC.trend)) +
+  geom_hline(yintercept = 0, color = "darkgray", linewidth = 1, linetype = 4) +
+  geom_point() +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 1 / 3) +
+  scale_x_continuous(breaks = 1:9) +
+  scale_y_continuous(breaks = function(y) floor(min(y)):ceiling(max(y))) +
+  labs(
+    x = "KSS score",
+    y = "Effect of BrAC on Per Close (95% CI)",
+    title = "Effect of BrAC on Per Close by KSS score"
+  )
+ggsave("./output/per_close_kss_bac_coef_plot.svg", per_close_kss_bac_coef_plot)
 ```
