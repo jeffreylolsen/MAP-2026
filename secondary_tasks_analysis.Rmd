@@ -630,6 +630,38 @@ lane_departure_model <- glmer(
 summary(lane_departure_model)
 ```
 
+## Vehicle speed LMMs
+
+```{r Vehicle speed LMMs}
+speed_sd_model <- lmer(
+  data = task_matrix,
+  formula = Speed_SD ~
+    KSS_cent +
+    BAC +
+    BAC * KSS_cent +
+    BAC * Phase +
+    Road_Surface +
+    as.numeric(Drive) +
+    Phase +
+    (1 | Subject)
+)
+summary(speed_sd_model)
+
+speed_mean_model <- lmer(
+  data = task_matrix,
+  formula = Speed_mean ~
+    KSS_cent +
+    BAC +
+    BAC * KSS_cent +
+    BAC * Phase +
+    Road_Surface +
+    as.numeric(Drive) +
+    Phase +
+    (1 | Subject)
+)
+summary(speed_mean_model)
+```
+
 ## `Per_Close` analysis
 
 ```{r Per_Close analysis}
