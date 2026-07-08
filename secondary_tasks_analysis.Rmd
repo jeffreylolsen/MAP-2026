@@ -816,7 +816,7 @@ non_aug %>%
           ymax = Inf,
           fill = "Control"
         ),
-          alpha = 0.4
+        alpha = 0.4
       ) +
       geom_rect(
         data = data.frame(
@@ -831,7 +831,7 @@ non_aug %>%
           ymax = Inf,
           fill = "Task"
         ),
-          alpha = 0.4
+        alpha = 0.4
       ) +
       scale_fill_manual(
         name = "Segment",
@@ -840,11 +840,11 @@ non_aug %>%
           "Task" = "red"
         )
       ) +
-    labs(
-      title = "Vehicle speed time series, highlighting tasks",
-      x = "Minute of drive",
-      y = "Vehicle speed"
-    )
+      labs(
+        title = "Vehicle speed time series, highlighting tasks",
+        x = "Minute of drive",
+        y = "Vehicle speed"
+      )
   } %>%
   ggsave("./output/speed_time_series_highlighted.svg", .)
 ```
