@@ -763,4 +763,58 @@ sdlp_kss_bac_coef_plot <- emtrends(
     title = "Effect of BrAC on SDLP by KSS score"
   )
 ggsave("./output/sdlp_kss_bac_coef_plot.svg", sdlp_kss_bac_coef_plot)
+
+# Time-series plot with tasks shaded
+non_aug %>%
+  filter(DaqName == non_aug[[1, "DaqName"]]) %>%
+  arrange(Frame_Num) %>%
+  filter(!rev(cumall(rev(Vehicle_Speed < 60)))) %>%
+  mutate(Minute = (Frame_Num + 1 - min(Frame_Num)) / 3600) %>%
+  {
+    ggplot(data = ., aes(x = Minute, y = Vehicle_Speed)) +
+      geom_line() +
+      geom_rect(
+        data = data.frame(
+          xmin = .$Minute[match(task_boundaries$Control_Start, non_aug$X)],
+          xmax = .$Minute[match(task_boundaries$Control_End, non_aug$X)]
+        ),
+        inherit.aes = FALSE,
+        aes(
+          xmin = xmin,
+          xmax = xmax,
+          ymin = -Inf,
+          ymax = Inf,
+          fill = "Control"
+        ),
+          alpha = 0.4
+      ) +
+      geom_rect(
+        data = data.frame(
+          xmin = .$Minute[match(task_boundaries$Task_Start, non_aug$X)],
+          xmax = .$Minute[match(task_boundaries$Task_End, non_aug$X)]
+        ),
+        inherit.aes = FALSE,
+        aes(
+          xmin = xmin,
+          xmax = xmax,
+          ymin = -Inf,
+          ymax = Inf,
+          fill = "Task"
+        ),
+          alpha = 0.4
+      ) +
+      scale_fill_manual(
+        name = "Segment",
+        values = c(
+          "Control" = "blue",
+          "Task" = "red"
+        )
+      ) +
+    labs(
+      title = "Vehicle speed time series, highlighting tasks",
+      x = "Minute of drive",
+      y = "Vehicle speed"
+    )
+  } %>%
+  ggsave("./output/speed_time_series_highlighted.svg", .)
 ```

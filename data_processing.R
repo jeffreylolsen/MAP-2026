@@ -1,4 +1,5 @@
 library(tidyverse)
+library(magrittr)
 library(dplyr)
 library(readxl)
 library(saccades)
@@ -174,6 +175,7 @@ task_windows <- press_events %>%
     Frame = Task_Start_X:(X + frame_length - 1),
     Phase = rep("Task", X - Task_Start_X + frame_length)
   )
+rm(press_events)
 
 # Find the boundaries of every task block per Daq run
 task_boundaries <- task_windows %>%
@@ -187,7 +189,9 @@ task_boundaries <- task_windows %>%
   group_by(DaqName) %>%
   mutate(
     Control_Start = Task_Start_X - Segment_Length,
-    Control_End = Task_Start_X - 1
+    Control_End = Task_Start_X - 1,
+    Task_Start = Task_Start_X,
+    Task_End = Task_Start_X + Segment_Length - 1,
   ) %>%
   ungroup() %>%
   filter(!is.na(Control_Start) & Control_End >= Control_Start)
@@ -205,7 +209,7 @@ control_windows <- task_boundaries %>%
     Frame = Control_Start:Control_End,
     Phase = "Control"
   )
-rm(task_boundaries)
+task_boundaries %<>% select(matches("^(Control|Task)_(Start|End)$"))
 
 # Combine with original Pre/Post task windows with the new control windows
 all_windows <- bind_rows(task_windows, control_windows) %>%
@@ -246,6 +250,7 @@ task_matrix <- task_windows_with_control %>%
     Lat_Dev_abs_init = Vehicle_Lat_Dev[1],
     Lat_Dev_SD = sd(Vehicle_Lat_Dev, na.rm = TRUE),
     Speed_SD = sd(Vehicle_Speed, na.rm = TRUE),
+    Speed_mean = mean(Vehicle_Speed, na.rm = TRUE),
     Braking_Events = sum(lag(Brake_Pedal_Force) == 0 & Brake_Pedal_Force > 0,
       na.rm = TRUE
     ),
@@ -268,7 +273,7 @@ task_matrix <- task_windows_with_control %>%
   group_by(Frame_Index) %>%
   mutate(Reaction_Frames = Frame_Count[1] - frame_length) %>%
   ungroup()
-rm(task_windows_with_control)
+rm(task_windows_with_control, lat_dev_sens, frame_length)
 
 write.csv(task_matrix, "./data/task_matrix.csv", row.names = FALSE)
 
@@ -309,7 +314,7 @@ for (metric in metrics) {
         .data[[glue("{metric}_Control")]]
     )
 }
-rm(metrics)
+rm(metrics, metric)
 
 # Write environment
 qs_save(as.list(environment()), "./data/processed_data.qs")
