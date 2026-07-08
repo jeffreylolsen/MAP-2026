@@ -594,7 +594,6 @@ lat_dev_phase_model <- lmer(
     (1 | Subject)
 )
 summary(lat_dev_phase_model)
-confint(lat_dev_phase_model)
 plot_model(lat_dev_phase_model,
   type = "pred",
   terms = c("BAC", "KSS_cent"),
@@ -683,7 +682,6 @@ per_close_model <- glmmTMB(
   family = beta_family()
 )
 summary(per_close_model)
-confint(per_close_model)
 ```
 
 While there is no significant difference in `Per_Close` by task phase,
