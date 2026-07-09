@@ -38,6 +38,10 @@ final_df = pd.DataFrame(columns=varfile["Ordered Columns"].tolist())
 # Read in each mat file and
 for i in range(0, reduced_disp.shape[0] - 1):
 
+    # Only add valid subjects (those with drive-level info in subj_drives)
+    if int(reduced_disp["Subject"][i]) not in subj_drives["subject_id"].values:
+        continue
+
     ## Read current mat file
     fname = matdata_dir + "/" + reduced_disp["MatName"][i]
     try:
@@ -45,6 +49,7 @@ for i in range(0, reduced_disp.shape[0] - 1):
         print(f"Successfully read {fname} ({i + 1}/{reduced_disp.shape[0] - 1})")
     except FileNotFoundError:
         print(f"Skipping {fname}: File not found ({i + 1}/{reduced_disp.shape[0] - 1})")
+        continue
 
     # Names of variables to extract, order does not matter since final_df is initialized
     variable_names = dict(
