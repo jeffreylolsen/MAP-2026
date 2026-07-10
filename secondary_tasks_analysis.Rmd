@@ -108,14 +108,17 @@ generate_table <- function(
       "PhaseTask" = "Phase (Task)",
       "Road_SurfacePaved" = "Road surface (Paved)",
       "as.numeric(Drive)" = "Drive \\#",
-      "SD (Intercept Subject)" = "Subject intercept SD",
+      "SD (Intercept Subject)" = "Subject baseline SD",
       "Lat_Dev_abs_init" = "Initial lateral deviation"
     ),
-    gof_map = data.frame(
-      raw = c("nobs", "r2.marginal", "r2.conditional"),
-      clean = c("N", "Marginal $R^2$", "Conditional $R^2$"),
-      fmt = c(0, 3, 3)
-    ),
+    
+#   gof_map = data.frame(
+#     raw = c("nobs", "r2.marginal", "r2.conditional"),
+#     clean = c("N", "Marginal $R^2$", "Conditional $R^2$"),
+#     fmt = c(0, 3, 3)
+#   ),
+    gof_omit = ".*",
+
     escape = FALSE,
     notes = list("+ p < 0.1, * p < 0.05, ** p < 0.01, *** p < 0.001")
   ) %>%
