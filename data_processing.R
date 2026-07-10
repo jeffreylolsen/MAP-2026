@@ -146,9 +146,6 @@ non_aug <- non_aug %>% filter(EventName %in% c(
 # Sensitivity of lateral deviation (Road width / sens is the threshold)
 lat_dev_sens <- 4 # 12 / 4 = 3 foot threshold
 
-# Number of frames to add to task segments on top of reaction time
-frame_length <- 300
-
 # Cleaned button press frames
 press_events <- non_aug %>%
   filter(Correct_Left_Button_Press == 1) %>%
@@ -162,138 +159,7 @@ press_events <- non_aug %>%
     Task_Start_X,
   )
 
-# Window of frames around each press
-task_windows <- press_events %>%
-  rowwise() %>%
-  reframe(
-    DaqName = DaqName,
-    Subject = Subject,
-    Drive = Drive,
-    # Want the frame number within the run of the simulator
-    Press_Frame = Frame_Num,
-    Frame_Index = X,
-    Frame = Task_Start_X:(X + frame_length - 1),
-    Phase = rep("Task", X - Task_Start_X + frame_length)
-  )
-rm(press_events)
-
-# Find the boundaries of every task block per Daq run
-task_boundaries <- task_windows %>%
-  group_by(DaqName, Subject, Drive, Press_Frame, Frame_Index) %>%
-  summarize(
-    Task_Start_X = min(Frame),
-    Segment_Length = n(),
-    .groups = "drop"
-  ) %>%
-  arrange(DaqName, Task_Start_X) %>%
-  group_by(DaqName) %>%
-  mutate(
-    Control_Start = Task_Start_X - Segment_Length,
-    Control_End = Task_Start_X - 1,
-    Task_Start = Task_Start_X,
-    Task_End = Task_Start_X + Segment_Length - 1,
-  ) %>%
-  ungroup() %>%
-  filter(!is.na(Control_Start) & Control_End >= Control_Start)
-non_aug$Task_Start_X <- NULL
-
-# Expand these boundaries into actual individual frame rows
-control_windows <- task_boundaries %>%
-  rowwise() %>%
-  reframe(
-    DaqName = DaqName,
-    Subject = Subject,
-    Drive = Drive,
-    Press_Frame = Press_Frame, # Linking it to the upcoming press
-    Frame_Index = Frame_Index,
-    Frame = Control_Start:Control_End,
-    Phase = "Control"
-  )
-task_boundaries %<>% select(matches("^(Control|Task)_(Start|End)$"))
-
-# Combine with original Pre/Post task windows with the new control windows
-all_windows <- bind_rows(task_windows, control_windows) %>%
-  arrange(DaqName, Frame) %>%
-  mutate(Phase = factor(Phase, levels = c(
-    "Control",
-    "Task"
-  )))
-rm(control_windows, task_windows)
-
-# Pull in raw eye data for ALL windows (Tasks and Controls)
-task_windows_with_control <- all_windows %>%
-  inner_join(
-    select(non_aug, -DaqName),
-    by = c("Subject", "Drive", "Frame" = "X")
-  )
-rm(all_windows)
-
-# Aggregate into one row per window with the control phases
-task_matrix <- task_windows_with_control %>%
-  group_by(DaqName, Subject, Drive, Press_Frame, Frame_Index, Phase) %>%
-  summarize(
-    LPupil_Diameter_mean = mean(LPupil_Diameter, na.rm = TRUE),
-    RPupil_Diameter_mean = mean(RPupil_Diameter, na.rm = TRUE),
-    Avg_Pupil_Diameter_mean = mean(Avg_Pupil_Diameter, na.rm = TRUE),
-    Gaze_Pitch_mean = mean(Gaze_Pitch, na.rm = TRUE),
-    Gaze_Yaw_mean = mean(Gaze_Yaw, na.rm = TRUE),
-    Lane_Departure = any(abs(Vehicle_Lat_Dev) > Road_Width / lat_dev_sens),
-    Deviation_Frames_prop = sum(
-      abs(Vehicle_Lat_Dev) > Road_Width / lat_dev_sens
-    ) / n(),
-    BAC = Start_BAC[1],
-    KSS = KSS_Score[1],
-    Blink_Count = max(Blink_Counter) - min(Blink_Counter),
-    # Per close is the proportion that **both eyes are closed simultaneously**
-    Per_Close = mean(Blinking, na.rm = TRUE),
-    # Initial lateral deviation affects SDLP since they are expected to correct
-    Lat_Dev_abs_init = Vehicle_Lat_Dev[1],
-    Lat_Dev_SD = sd(Vehicle_Lat_Dev, na.rm = TRUE),
-    Speed_SD = sd(Vehicle_Speed, na.rm = TRUE),
-    Speed_mean = mean(Vehicle_Speed, na.rm = TRUE),
-    Braking_Events = sum(lag(Brake_Pedal_Force) == 0 & Brake_Pedal_Force > 0,
-      na.rm = TRUE
-    ),
-    Brake_Force_mean = mean(Brake_Pedal_Force, na.rm = TRUE),
-    Saccade_Count = sum(Eye_Event == "saccade" & lag(Eye_Event) != "saccade",
-      na.rm = TRUE
-    ),
-    Saccade_Prop = mean(Eye_Event == "saccade", na.rm = TRUE),
-    Road_Surface = ifelse(names(which.max(table(EventName))) != "Gravel",
-      "Paved",
-      "Gravel"
-    ),
-    Frame_Count = n(),
-    .groups = "drop"
-  ) %>%
-  mutate(
-    BAC_cent = BAC - median(BAC, na.rm = TRUE),
-    KSS_cent = KSS - median(KSS, na.rm = TRUE)
-  ) %>%
-  group_by(Frame_Index) %>%
-  mutate(Reaction_Frames = Frame_Count[1] - frame_length) %>%
-  ungroup()
-rm(task_windows_with_control, lat_dev_sens, frame_length)
-
-write.csv(task_matrix, "./data/task_matrix.csv", row.names = FALSE)
-
-# Make wide-form version for paired differences
-wideform_task_matrix <- task_matrix %>%
-  pivot_wider(
-    names_from = Phase,
-    values_from = setdiff(
-      tail(colnames(task_matrix), -5),
-      c(
-        "BAC",
-        "KSS",
-        "BAC_cent",
-        "KSS_cent",
-        "Reaction_Frames",
-        "Road_Surface" # Empirically, both segments always have same road surface
-      )
-    )
-  )
-
+# Metrics for which to generate a paired difference
 metrics <- c(
   "Deviation_Frames_prop",
   "Avg_Pupil_Diameter_mean",
@@ -307,14 +173,164 @@ metrics <- c(
   "Per_Close",
   "Brake_Force_mean"
 )
-for (metric in metrics) {
-  wideform_task_matrix <- wideform_task_matrix %>%
-    mutate(
-      "{metric}_diff" := .data[[glue("{metric}_Task")]] -
-        .data[[glue("{metric}_Control")]]
+
+for (frame_length in c(180, 300, 600)) {
+  # Window of frames around each press
+  task_windows <- press_events %>%
+    rowwise() %>%
+    reframe(
+      DaqName = DaqName,
+      Subject = Subject,
+      Drive = Drive,
+      # Want the frame number within the run of the simulator
+      Press_Frame = Frame_Num,
+      Frame_Index = X,
+      Frame = Task_Start_X:(X + frame_length - 1),
+      Phase = rep("Task", X - Task_Start_X + frame_length)
     )
+
+  # Find the boundaries of every task block per Daq run
+  task_boundaries <- task_windows %>%
+    group_by(DaqName, Subject, Drive, Press_Frame, Frame_Index) %>%
+    summarize(
+      Task_Start_X = min(Frame),
+      Segment_Length = n(),
+      .groups = "drop"
+    ) %>%
+    arrange(DaqName, Task_Start_X) %>%
+    group_by(DaqName) %>%
+    mutate(
+      Control_Start = Task_Start_X - Segment_Length,
+      Control_End = Task_Start_X - 1,
+      Task_Start = Task_Start_X,
+      Task_End = Task_Start_X + Segment_Length - 1,
+    ) %>%
+    ungroup() %>%
+    filter(!is.na(Control_Start) & Control_End >= Control_Start)
+  non_aug$Task_Start_X <- NULL
+
+  # Expand these boundaries into actual individual frame rows
+  control_windows <- task_boundaries %>%
+    rowwise() %>%
+    reframe(
+      DaqName = DaqName,
+      Subject = Subject,
+      Drive = Drive,
+      Press_Frame = Press_Frame, # Linking it to the upcoming press
+      Frame_Index = Frame_Index,
+      Frame = Control_Start:Control_End,
+      Phase = "Control"
+    )
+  task_boundaries %<>% select(matches("^(Control|Task)_(Start|End)$"))
+
+  # Combine with original Pre/Post task windows with the new control windows
+  all_windows <- bind_rows(task_windows, control_windows) %>%
+    arrange(DaqName, Frame) %>%
+    mutate(Phase = factor(Phase, levels = c(
+      "Control",
+      "Task"
+    )))
+  rm(control_windows, task_windows)
+
+  # Pull in raw eye data for ALL windows (Tasks and Controls)
+  task_windows_with_control <- all_windows %>%
+    inner_join(
+      select(non_aug, -DaqName),
+      by = c("Subject", "Drive", "Frame" = "X")
+    )
+  rm(all_windows)
+
+  # Aggregate into one row per window with the control phases
+  task_matrix <- task_windows_with_control %>%
+    group_by(DaqName, Subject, Drive, Press_Frame, Frame_Index, Phase) %>%
+    summarize(
+      LPupil_Diameter_mean = mean(LPupil_Diameter, na.rm = TRUE),
+      RPupil_Diameter_mean = mean(RPupil_Diameter, na.rm = TRUE),
+      Avg_Pupil_Diameter_mean = mean(Avg_Pupil_Diameter, na.rm = TRUE),
+      Gaze_Pitch_mean = mean(Gaze_Pitch, na.rm = TRUE),
+      Gaze_Yaw_mean = mean(Gaze_Yaw, na.rm = TRUE),
+      Lane_Departure = any(abs(Vehicle_Lat_Dev) > Road_Width / lat_dev_sens),
+      Deviation_Frames_prop = sum(
+        abs(Vehicle_Lat_Dev) > Road_Width / lat_dev_sens
+      ) / n(),
+      BAC = Start_BAC[1],
+      KSS = KSS_Score[1],
+      Blink_Count = max(Blink_Counter) - min(Blink_Counter),
+      # Per close is the proportion that **both eyes are closed simultaneously**
+      Per_Close = mean(Blinking, na.rm = TRUE),
+      # Initial lateral deviation affects SDLP since they expect to correct
+      Lat_Dev_abs_init = Vehicle_Lat_Dev[1],
+      Lat_Dev_SD = sd(Vehicle_Lat_Dev, na.rm = TRUE),
+      Speed_SD = sd(Vehicle_Speed, na.rm = TRUE),
+      Speed_mean = mean(Vehicle_Speed, na.rm = TRUE),
+      Braking_Events = sum(lag(Brake_Pedal_Force) == 0 & Brake_Pedal_Force > 0,
+        na.rm = TRUE
+      ),
+      Brake_Force_mean = mean(Brake_Pedal_Force, na.rm = TRUE),
+      Saccade_Count = sum(Eye_Event == "saccade" & lag(Eye_Event) != "saccade",
+        na.rm = TRUE
+      ),
+      Saccade_Prop = mean(Eye_Event == "saccade", na.rm = TRUE),
+      Road_Surface = ifelse(names(which.max(table(EventName))) != "Gravel",
+        "Paved",
+        "Gravel"
+      ),
+      Frame_Count = n(),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      BAC_cent = BAC - median(BAC, na.rm = TRUE),
+      KSS_cent = KSS - median(KSS, na.rm = TRUE)
+    ) %>%
+    group_by(Frame_Index) %>%
+    mutate(Reaction_Frames = Frame_Count[1] - frame_length) %>%
+    ungroup()
+  rm(task_windows_with_control)
+
+  write.csv(task_matrix, "./data/task_matrix.csv", row.names = FALSE)
+
+  # Make wide-form version for paired differences
+  wideform_task_matrix <- task_matrix %>%
+    pivot_wider(
+      names_from = Phase,
+      values_from = setdiff(
+        tail(colnames(task_matrix), -5),
+        c(
+          "BAC",
+          "KSS",
+          "BAC_cent",
+          "KSS_cent",
+          "Reaction_Frames",
+          "Road_Surface"
+        )
+      )
+    )
+
+  for (metric in metrics) {
+    wideform_task_matrix <- wideform_task_matrix %>%
+      mutate(
+        "{metric}_diff" := .data[[glue("{metric}_Task")]] -
+          .data[[glue("{metric}_Control")]]
+      )
+  }
+
+  # Assign to frame length-specific variables
+  for (var in c("task_boundaries", "task_matrix", "wideform_task_matrix")) {
+    assign(glue("{var}_{frame_length}"), get(var))
+  }
 }
-rm(metrics, metric)
+rm(
+  press_events,
+  metrics,
+  metric,
+  frame_length,
+  lat_dev_sens,
+  task_boundaries,
+  task_matrix,
+  wideform_task_matrix,
+  var
+)
 
 # Write environment
+processing_path <- this.path()
 qs_save(as.list(environment()), "./data/processed_data.qs")

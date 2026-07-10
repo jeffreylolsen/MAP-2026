@@ -5,3 +5,4 @@ Tim.m
 .*
 !.git*
 style.bat
+clear_cache.ps1

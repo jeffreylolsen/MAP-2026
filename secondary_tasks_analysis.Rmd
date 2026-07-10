@@ -40,6 +40,7 @@ library(visreg)
 library(modelsummary)
 library(emmeans)
 library(plotly)
+library(ggbreak)
 library(qs2)
 library(downloadthis)
 
@@ -66,40 +67,33 @@ download_file(
 
 setwd(this.dir())
 
-if (!file.exists("./data/processed_data.qs") |
-  file.mtime("./data/processed_data.qs") <
-    file.mtime("./data_processing.R")) {
-  processing_env <- new.env()
-  source("./data_processing.R", local = processing_env)
-  list2env(as.list(processing_env), envir = globalenv())
-} else {
-  qs_readm("./data/processed_data.qs")
+if (!file.exists("./data/final_data.qs") |
+  file.mtime("./data/final_data.qs") <
+    file.mtime("./modeling.R")) {
+  local(source("./modeling.R", local = TRUE))
 }
+qs_readm("./data/final_data.qs")
 ```
 
 ```{r Helpers}
 #| include = FALSE
 
 generate_table <- function(
-  model,
+  model_list,
   title,
-  shape = term ~ statistic,
-  align = "lrcrc",
+  shape = term ~ model,
+  align = "lrrr",
   ...
 ) {
   modelsummary(
-    list(" " = model),
+    model_list,
     ...,
     title = title,
     output = "latex",
     stars = TRUE,
     shape = shape,
-    estimate = c("Estimate" = "{estimate}"),
-    statistic = c(
-      "95\\symbol{37} CI" = "({conf.low}, {conf.high})",
-      "p-value" = "{p.value}",
-      " " = "{stars}"
-    ),
+    estimate = "{estimate}",
+    statistic = c("({std.error})", "{stars}"),
     align = align,
     coef_rename = c(
       "(Intercept)" = "Intercept",
@@ -139,48 +133,41 @@ generate_table <- function(
 ## Preliminary models
 
 ```{r Preliminary models}
-# Fit mixed-effects model to predict deviation differences
-# across drives, with random intercepts for subjects
-
-model2 <- lmer(Deviation_Frames_prop_diff ~ factor(Drive) + (1 | Subject),
-  data = wideform_task_matrix
-)
-summary(model2)
-
 # Model testing the fixed effects of alcohol (BAC) and fatigue (KSS) on
 # averaged bilateral pupil reactivity,
 # controlling for individual baseline variance
-
-model3 <- lmer(Avg_Pupil_Diameter_mean_diff ~ BAC + KSS_cent + (1 | Subject),
-  data = wideform_task_matrix
-)
-summary(model3)
+lapply(models[["pup"]], summary)
 
 # SDLP Model predicted by alcohol and fatigue
-
-model_sdlp <- lmer(Lat_Dev_SD_diff ~ BAC + KSS_cent + (1 | Subject),
-  data = wideform_task_matrix
-)
-summary(model_sdlp)
+lapply(models[["sdlp"]], summary)
 
 # Speed_SD_Diff model predicted by alcohol and fatigue
-
-model_speed <- lmer(Speed_SD_diff ~ BAC + KSS_cent + (1 | Subject),
-  data = wideform_task_matrix
-)
-summary(model_speed)
+lapply(models[["speed"]], summary)
 
 # Lane departure proportion difference (you already build this column)
-model_dev <- lmer(Deviation_Frames_prop_diff ~ BAC + KSS_cent + (1 | Subject),
-  data = wideform_task_matrix
-)
-summary(model_dev)
+lapply(models[["dev"]], summary)
 
-print(t.test(wideform_task_matrix$Avg_Pupil_Diameter_mean_diff))
-print(t.test(wideform_task_matrix$Lat_Dev_SD_diff))
-print(t.test(wideform_task_matrix$Speed_SD_diff))
-print(t.test(wideform_task_matrix$Per_Close_diff))
-print(t.test(wideform_task_matrix$Brake_Force_mean_diff))
+for (metric in c(
+  "Avg_Pupil_Diameter_mean_diff",
+  "Lat_Dev_SD_diff",
+  "Speed_SD_diff",
+  "Per_Close_diff",
+  "Brake_Force_mean_diff"
+)) {
+  for (val in c(180, 300, 600)) {
+    print(glue("{metric}: {val / 60} second segments"))
+    print(
+      as.vector(
+        t.test(
+          get(
+            glue("wideform_task_matrix_{val}")
+          )[[metric]]
+        )$conf.int
+      )
+    )
+    cat("\n")
+  }
+}
 ```
 
 ## Preliminary lane deviation analysis
@@ -190,13 +177,13 @@ print(t.test(wideform_task_matrix$Brake_Force_mean_diff))
 #| out.width = "100%"
 
 ggplot(
-  data = task_matrix,
+  data = task_matrix_180,
   aes(x = Deviation_Frames_prop)
 ) +
   geom_density() +
   geom_vline(
     aes(xintercept = mean(filter(
-      task_matrix,
+      task_matrix_180,
       Drive == 1 & Phase == "Control"
     )$Deviation_Frames_prop)),
     linetype = "dashed"
@@ -210,7 +197,7 @@ ggplot(
 ```{r Distributions of deviation proportion differences by drive}
 # Limit to tasks where there was at least one frame of deviation before or after
 ggplot(
-  data = wideform_task_matrix %>% filter(
+  data = wideform_task_matrix_180 %>% filter(
     Deviation_Frames_prop_Task != 0 |
       Deviation_Frames_prop_Control != 0
   ),
@@ -250,7 +237,7 @@ ggplot(
 ## Box plots to compare control & task phases
 
 ```{r Box Plots for task matrix}
-plot_data <- task_matrix %>% filter(!is.na(Avg_Pupil_Diameter_mean))
+plot_data <- task_matrix_180 %>% filter(!is.na(Avg_Pupil_Diameter_mean))
 
 ggplot(plot_data, aes(x = Phase, y = Avg_Pupil_Diameter_mean)) +
   geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
@@ -266,10 +253,10 @@ left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X
 
 # Create a list of filtered data frames
 obs_around_press <- bind_rows(lapply(
-  unique(task_matrix$Frame_Index),
+  unique(task_matrix_180$Frame_Index),
   function(press) {
     frames_in_segment <- filter(
-      task_matrix,
+      task_matrix_180,
       Frame_Index == press
     )[[1, "Reaction_Frames"]]
 
@@ -353,16 +340,8 @@ ggplot(
   scale_color_viridis_c(name = "KSS", direction = -1) +
   ylim(0, 6)
 
-pupil_diameter_diff_model <- lmer(
-  Avg_Pupil_Diameter_mean_diff ~
-    BAC +
-    KSS_cent +
-    as.numeric(Drive) +
-    (1 | Subject),
-  data = wideform_task_matrix
-)
-summary(pupil_diameter_diff_model)
-check_collinearity(pupil_diameter_diff_model)
+lapply(models[["pupil_diameter_diff"]], summary)
+lapply(models[["pupil_diameter_diff"]], check_collinearity)
 ```
 
 ## Reaction time by subject, drive, KSS
@@ -371,7 +350,7 @@ check_collinearity(pupil_diameter_diff_model)
 #| out.width = "100%"
 
 # Line plot
-task_matrix %>%
+task_matrix_180 %>%
   drop_na(KSS, Subject, Drive, Reaction_Frames) %>%
   group_by(Subject, Drive, KSS) %>%
   summarize(
@@ -383,7 +362,7 @@ task_matrix %>%
       data = filter(
         .,
         as.numeric(Subject) %in% sample(
-          unique(task_matrix$Subject),
+          unique(task_matrix_180$Subject),
           10
         )
       ),
@@ -396,7 +375,7 @@ task_matrix %>%
   }
 
 # Heat map
-task_matrix %>%
+task_matrix_180 %>%
   drop_na(KSS) %>%
   group_by(Drive, KSS) %>%
   summarize(
@@ -422,7 +401,7 @@ task_matrix %>%
   }
 
 # Box plot
-wideform_task_matrix %>%
+wideform_task_matrix_180 %>%
   mutate(Reaction_Time = Reaction_Frames * (1000 / 60)) %>%
   drop_na(Phase_Control, KSS) %>%
   {
@@ -445,24 +424,17 @@ some trait and aggregate across drivers within groups.
 ```{r Saccades ZIP model}
 #| out.width = "100%"
 
-ggplot(task_matrix, aes(x = Saccade_Count)) +
+ggplot(task_matrix_180, aes(x = Saccade_Count)) +
   geom_histogram(binwidth = 0.5) +
   facet_wrap(~Phase)
 
-model_saccade_zip <- glmmTMB(
-  Saccade_Count ~ Phase + BAC + KSS_cent + Road_Surface +
-    (1 | Subject) + (1 | Frame_Index),
-  ziformula = ~1, # What predicts being in the "zero" group?
-  family = poisson,
-  data = task_matrix
-)
-summary(model_saccade_zip)
+lapply(models[["saccade_zip"]], summary)
 ```
 
 ## Saccade binary visualizations
 
 ```{r Saccade binary visualizations}
-task_matrix %>%
+task_matrix_180 %>%
   mutate(Zero_Saccade = Saccade_Count == 0) %>%
   group_by(Drive, Phase) %>%
   summarize(
@@ -492,49 +464,17 @@ task_matrix %>%
 ## Saccade logit
 
 ```{r Saccade logit}
-saccade_logit_model <- glmer(
-  data = task_matrix,
-  formula =
-    (Saccade_Count > 0) ~
-      BAC +
-      KSS_cent +
-      Road_Surface +
-      BAC * KSS_cent +
-      # BAC * Phase +
-      as.numeric(Drive) +
-      Phase +
-      (1 | Subject) + (1 | Frame_Index),
-  family = "binomial"
-)
-summary(saccade_logit_model)
+lapply(models[["saccade_logit"]], summary)
 ```
-
-Including an interaction term between BAC and Phase, there was no evidence
-($p = 0.11$) that the the effect of BAC on saccades is less (in magnitude) in
-the task segment than in the control group.
-There was no evidence to suggest a difference in BAC effect on saccades
-between the control and pre-task segments.
-
-A similar model with an interaction term between phase and drive number
-was not better-fitting when accounting for the additional parameters.
 
 ## Reaction time by SDLP prior to task
 
 ```{r Reaction time by SDLP prior to task}
 #| out.width = "100%"
 
-model_rt_driving <- lmer(
-  (Reaction_Frames * (1000 / 60)) ~
-    BAC +
-    KSS_cent +
-    Road_Surface +
-    as.numeric(Drive) + # Drive term to adjust for learning effect
-    (1 | Subject),
-  data = wideform_task_matrix
-)
-summary(model_rt_driving)
+lapply(models[["rt_driving"]], summary)
 
-wideform_task_matrix %>%
+wideform_task_matrix_180 %>%
   drop_na(Lat_Dev_SD_Control, Reaction_Frames, Drive, KSS) %>%
   mutate(Drive = factor(
     Drive,
@@ -565,41 +505,15 @@ wideform_task_matrix %>%
   ylim(0, 5000) +
   xlim(0, 1.5)
 
-reaction_vs_latdev_by_drive_model <-
-  lmer(
-    data = wideform_task_matrix,
-    formula = (
-      (Reaction_Frames * (1000 / 60)) ~
-        Lat_Dev_SD_Control +
-        KSS_cent +
-        BAC +
-        Road_Surface +
-        as.numeric(Drive) + # To adjust for learning effect
-        Lat_Dev_SD_Control * BAC +
-        (1 | Subject)
-    )
-  )
-summary(reaction_vs_latdev_by_drive_model)
+lapply(models[["reaction_vs_latdev_by_drive"]], summary)
 ```
 
 ## SDLP by task segment
 
 ```{r SDLP by task segment}
-lat_dev_phase_model <- lmer(
-  data = task_matrix,
-  formula = Lat_Dev_SD ~
-    Lat_Dev_abs_init +
-    KSS_cent +
-    BAC +
-    BAC * KSS_cent +
-    BAC * Phase +
-    Road_Surface +
-    as.numeric(Drive) +
-    Phase +
-    (1 | Subject) + (1 | Frame_Index)
-)
-summary(lat_dev_phase_model)
-plot_model(lat_dev_phase_model,
+lapply(models[["lat_dev_phase"]], summary)
+lapply(models[["lat_dev_phase"]],
+  plot_model,
   type = "pred",
   terms = c("BAC", "KSS_cent"),
   ci.lvl = 0.95,
@@ -607,71 +521,32 @@ plot_model(lat_dev_phase_model,
   legend.title = "KSS - 5\n(median centered)",
   title = "Interaction plot: SDLP vs BrAC"
 )
-visreg(lat_dev_phase_model, "BAC", by = "KSS_cent", layout = c(3, 1))
+lapply(
+  models[["lat_dev_phase_visreg"]],
+  function(x) {
+    print(plot(x, layout = c(3, 1)))
+  }
+)
 ```
-
-There is strong evidence to suggest that the effect of
-BAC on SDLP is lessened as KSS increases.
-
-There is no evidence that the effect of BAC on SDLP differs by task segment
-$(p > 0.6)$ for each task phase vs control.
 
 ## Lane departure logit
 
 ```{r Lane departure logit}
-lane_departure_model <- glmer(
-  data = task_matrix,
-  formula = (
-    Lane_Departure ~
-      BAC +
-      KSS_cent +
-      Phase +
-      Road_Surface +
-      as.numeric(Drive) +
-      (1 | Subject) + (1 | Frame_Index)
-  ),
-  family = "binomial"
-)
-summary(lane_departure_model)
+lapply(models[["lane_departure"]], summary)
 ```
 
 ## Vehicle speed LMMs
 
 ```{r Vehicle speed LMMs}
-speed_sd_model <- lmer(
-  data = task_matrix,
-  formula = Speed_SD ~
-    KSS_cent +
-    BAC +
-    BAC * KSS_cent +
-    BAC * Phase +
-    Road_Surface +
-    as.numeric(Drive) +
-    Phase +
-    (1 | Subject) + (1 | Frame_Index)
-)
-summary(speed_sd_model)
-
-speed_mean_model <- lmer(
-  data = task_matrix,
-  formula = Speed_mean ~
-    KSS_cent +
-    BAC +
-    BAC * KSS_cent +
-    BAC * Phase +
-    Road_Surface +
-    as.numeric(Drive) +
-    Phase +
-    (1 | Subject) + (1 | Frame_Index)
-)
-summary(speed_mean_model)
+lapply(models[["speed_sd"]], summary)
+lapply(models[["speed_mean"]], summary)
 ```
 
 ## `Per_Close` analysis
 
 ```{r Per_Close analysis}
 # Heat map
-task_matrix %>%
+task_matrix_180 %>%
   drop_na(Per_Close, KSS) %>%
   group_by(Drive, KSS) %>%
   summarize(
@@ -700,104 +575,82 @@ task_matrix %>%
       theme_minimal()
   }
 
-per_close_model <- glmmTMB(
-  # A single observation of Per_Close = 1,
-  # not likely to be seen frequently in population data
-  data = filter(task_matrix, Per_Close != 1),
-  formula = (
-    Per_Close ~
-      KSS_cent +
-      BAC +
-      Phase +
-      BAC * KSS_cent +
-      BAC * Phase +
-      Road_Surface +
-      as.numeric(Drive) + # To adjust for learning effect
-      (1 | Subject) + (1 | Frame_Index)
-  ),
-  ziformula = ~1,
-  family = beta_family()
-)
-summary(per_close_model)
+lapply(models[["per_close"]], summary)
 ```
-
-While there is no significant difference in `Per_Close` by task phase,
-there is strong evidence that the effect of either KSS or BAC on `Per_Close`
-is lessened as the other increases (similar to SDLP in the current model).
-There is also strong evidence that `Per_Close` increases with drive, so
-it's important to consider if Drive is absorbing the "fatigue effect"
-that should increase `Per_Close` with both KSS and Drive.
-There is no evidence of a significant BAC:Phase interaction,
-but, similarly to the saccade logit model, there is more evidence of a
-difference in BAC effect between control and task segments.
 
 ## Brake force analysis
 
 ```{r Brake force analysis}
-brake_force_model <- lmer(
-  data = task_matrix,
-  formula = (
-    Brake_Force_mean ~
-      Phase +
-      KSS_cent +
-      BAC +
-      BAC * Phase +
-      BAC * KSS_cent +
-      Road_Surface +
-      as.numeric(Drive) +
-      (1 | Subject) + (1 | Frame_Index)
-  )
-)
-summary(brake_force_model)
+lapply(models[["brake_force"]], summary)
 ```
 
-Interaction terms BAC:Phase and BAC:KSS are not statistically significant.
-Since changing from a three-segment to a two segment model,
-the effect of BAC on brake force is no longer statistically significant.
-
 ```{r Generate visuals for paper}
+#| include = FALSE
+renamed_models <- function(model) {
+  setNames(
+    models[[model]],
+    lapply(
+      as.numeric(names(models[[model]])) / 60,
+      function(x) {
+        glue("{x}s")
+      }
+    )
+  )
+}
+
 generate_table(
-  lat_dev_phase_model,
+  renamed_models("lat_dev_phase"),
   "SDLP linear model"
 )
 generate_table(
-  lane_departure_model,
+  renamed_models("lane_departure"),
   "Lane departure logit model"
 )
 generate_table(
-  per_close_model,
+  renamed_models("per_close"),
   "Per Close beta model",
-  shape = component + term ~ statistic,
-  align = "llrcrc"
+  shape = component + term ~ model,
+  align = "llrrr"
 )
 generate_table(
-  saccade_logit_model,
+  renamed_models("saccade_logit"),
   "Saccade logit model"
 )
 
 # BrAC slope by KSS score
-sdlp_kss_bac_coef_plot <- emtrends(
-  object = lat_dev_phase_model,
-  data = task_matrix,
-  specs = ~KSS_cent,
-  var = "BAC",
-  at = list(KSS_cent = -4:4),
-  component = "cond"
-) %>%
-  as.data.frame() %>%
-  mutate(KSS = KSS_cent + abs(min(KSS_cent)) + 1) %>%
-  ggplot(aes(x = KSS, y = BAC.trend)) +
-  geom_hline(yintercept = 0, color = "darkgray", linewidth = 1, linetype = 4) +
-  geom_point() +
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 1 / 3) +
-  scale_x_continuous(breaks = 1:9) +
-  scale_y_continuous(breaks = function(y) floor(min(y)):ceiling(max(y))) +
-  labs(
-    x = "KSS score",
-    y = "Effect of BrAC on SDLP (95% CI)",
-    title = "Effect of BrAC on SDLP by KSS score"
+sdlp_kss_bac_coef_plots <- lapply(
+  list("180" = 180, "300" = 300, "600" = 600),
+  function(x) {
+    emtrends(
+      object = models[["lat_dev_phase"]][[as.character(x)]],
+      data = get(glue("task_matrix_{x}")),
+      specs = ~KSS_cent,
+      var = "BAC",
+      at = list(KSS_cent = -4:4),
+      component = "cond"
+    ) %>%
+      as.data.frame() %>%
+      mutate(KSS = KSS_cent + abs(min(KSS_cent)) + 1) %>%
+      ggplot(aes(x = KSS, y = BAC.trend)) +
+      geom_hline(yintercept = 0, color = "darkgray", linewidth = 1, linetype = 4) +
+      geom_point() +
+      geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 1 / 3) +
+      scale_x_continuous(breaks = 1:9) +
+      scale_y_continuous(breaks = function(y) floor(min(y)):ceiling(max(y))) +
+      labs(
+        x = "KSS score",
+        y = "Effect of BrAC on SDLP (95% CI)",
+        title = glue("Effect of BrAC on SDLP by KSS score ({x / 60}s window)")
+      )
+  }
+)
+for (val in c(180, 300, 600)) {
+  ggsave(
+    glue("./output/sdlp_kss_bac_coef_plot_{val}.svg"),
+    sdlp_kss_bac_coef_plots[[as.character(val)]]
   )
-ggsave("./output/sdlp_kss_bac_coef_plot.svg", sdlp_kss_bac_coef_plot)
+}
+rm(val)
 
 # Time-series plot with tasks shaded
 non_aug %>%
@@ -810,8 +663,8 @@ non_aug %>%
       geom_line() +
       geom_rect(
         data = data.frame(
-          xmin = .$Minute[match(task_boundaries$Control_Start, non_aug$X)],
-          xmax = .$Minute[match(task_boundaries$Control_End, non_aug$X)]
+          xmin = .$Minute[match(task_boundaries_180$Control_Start, non_aug$X)],
+          xmax = .$Minute[match(task_boundaries_180$Control_End, non_aug$X)]
         ),
         inherit.aes = FALSE,
         aes(
@@ -825,8 +678,8 @@ non_aug %>%
       ) +
       geom_rect(
         data = data.frame(
-          xmin = .$Minute[match(task_boundaries$Task_Start, non_aug$X)],
-          xmax = .$Minute[match(task_boundaries$Task_End, non_aug$X)]
+          xmin = .$Minute[match(task_boundaries_180$Task_Start, non_aug$X)],
+          xmax = .$Minute[match(task_boundaries_180$Task_End, non_aug$X)]
         ),
         inherit.aes = FALSE,
         aes(
@@ -849,7 +702,8 @@ non_aug %>%
         title = "Vehicle speed time series, highlighting tasks",
         x = "Minute of drive",
         y = "Vehicle speed"
-      )
+      ) +
+      scale_x_break(c(6, 9))
   } %>%
   ggsave("./output/speed_time_series_highlighted.svg", .)
 ```

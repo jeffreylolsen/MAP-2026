@@ -4,7 +4,8 @@
 
 1) [process_matfiles.py](process_matfiles.py) to generate a time-series data frame from matfiles
 2) [data_processing.R](data_processing.R) to add and re-code features
-3) [secondary_tasks_analysis.Rmd](secondary_tasks_analysis.Rmd) to run models and generate plots
+3) [modeling.R](modeling.R) to generate models
+4) [secondary_tasks_analysis.Rmd](secondary_tasks_analysis.Rmd) to display models and generate plots
 
 ## Data files
 
