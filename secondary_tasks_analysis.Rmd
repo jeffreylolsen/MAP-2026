@@ -109,16 +109,17 @@ generate_table <- function(
       "Road_SurfacePaved" = "Road surface (Paved)",
       "as.numeric(Drive)" = "Drive \\#",
       "SD (Intercept Subject)" = "Subject baseline SD",
+      "SD (Intercept Frame_Index)" = "Unique task baseline SD",
       "Lat_Dev_abs_init" = "Initial lateral deviation"
     ),
-    
-#   gof_map = data.frame(
-#     raw = c("nobs", "r2.marginal", "r2.conditional"),
-#     clean = c("N", "Marginal $R^2$", "Conditional $R^2$"),
-#     fmt = c(0, 3, 3)
-#   ),
-    gof_omit = ".*",
 
+    #   gof_map = data.frame(
+    #     raw = c("nobs", "r2.marginal", "r2.conditional"),
+    #     clean = c("N", "Marginal $R^2$", "Conditional $R^2$"),
+    #     fmt = c(0, 3, 3)
+    #   ),
+
+    gof_omit = ".*",
     escape = FALSE,
     notes = list("+ p < 0.1, * p < 0.05, ** p < 0.01, *** p < 0.001")
   ) %>%
@@ -449,7 +450,8 @@ ggplot(task_matrix, aes(x = Saccade_Count)) +
   facet_wrap(~Phase)
 
 model_saccade_zip <- glmmTMB(
-  Saccade_Count ~ Phase + BAC + KSS_cent + Road_Surface + (1 | Subject),
+  Saccade_Count ~ Phase + BAC + KSS_cent + Road_Surface +
+    (1 | Subject) + (1 | Frame_Index),
   ziformula = ~1, # What predicts being in the "zero" group?
   family = poisson,
   data = task_matrix
@@ -501,7 +503,7 @@ saccade_logit_model <- glmer(
       # BAC * Phase +
       as.numeric(Drive) +
       Phase +
-      (1 | Subject),
+      (1 | Subject) + (1 | Frame_Index),
   family = "binomial"
 )
 summary(saccade_logit_model)
@@ -594,7 +596,7 @@ lat_dev_phase_model <- lmer(
     Road_Surface +
     as.numeric(Drive) +
     Phase +
-    (1 | Subject)
+    (1 | Subject) + (1 | Frame_Index)
 )
 summary(lat_dev_phase_model)
 plot_model(lat_dev_phase_model,
@@ -626,7 +628,7 @@ lane_departure_model <- glmer(
       Phase +
       Road_Surface +
       as.numeric(Drive) +
-      (1 | Subject)
+      (1 | Subject) + (1 | Frame_Index)
   ),
   family = "binomial"
 )
@@ -646,7 +648,7 @@ speed_sd_model <- lmer(
     Road_Surface +
     as.numeric(Drive) +
     Phase +
-    (1 | Subject)
+    (1 | Subject) + (1 | Frame_Index)
 )
 summary(speed_sd_model)
 
@@ -660,7 +662,7 @@ speed_mean_model <- lmer(
     Road_Surface +
     as.numeric(Drive) +
     Phase +
-    (1 | Subject)
+    (1 | Subject) + (1 | Frame_Index)
 )
 summary(speed_mean_model)
 ```
@@ -711,7 +713,7 @@ per_close_model <- glmmTMB(
       BAC * Phase +
       Road_Surface +
       as.numeric(Drive) + # To adjust for learning effect
-      (1 | Subject)
+      (1 | Subject) + (1 | Frame_Index)
   ),
   ziformula = ~1,
   family = beta_family()
@@ -743,7 +745,7 @@ brake_force_model <- lmer(
       BAC * KSS_cent +
       Road_Surface +
       as.numeric(Drive) +
-      (1 | Subject)
+      (1 | Subject) + (1 | Frame_Index)
   )
 )
 summary(brake_force_model)
