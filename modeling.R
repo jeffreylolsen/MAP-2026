@@ -13,6 +13,7 @@ library(visreg)
 library(modelsummary)
 library(emmeans)
 library(plotly)
+library(qs2)
 
 # Read in processed data
 setwd(this.dir())
@@ -149,12 +150,14 @@ for (frame_length in as.character(c(180, 300, 600))) {
     data = task_matrix,
     formula = (
       Lane_Departure ~
-        BAC +
-        KSS_cent +
-        Phase +
-        Road_Surface +
-        as.numeric(Drive) +
-        (1 | Subject) + (1 | Frame_Index)
+      KSS_cent +
+      BAC +
+      BAC * KSS_cent +
+      BAC * Phase +
+      Road_Surface +
+      as.numeric(Drive) +
+      Phase +
+      (1 | Subject) + (1 | Frame_Index)
     ),
     family = "binomial"
   )
@@ -198,7 +201,7 @@ for (frame_length in as.character(c(180, 300, 600))) {
         BAC * KSS_cent +
         BAC * Phase +
         Road_Surface +
-        as.numeric(Drive) + # To adjust for learning effect
+        as.numeric(Drive) +
         (1 | Subject) + (1 | Frame_Index)
     ),
     ziformula = ~1,
