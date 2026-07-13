@@ -584,8 +584,9 @@ lapply(models[["per_close"]], summary)
 lapply(models[["brake_force"]], summary)
 ```
 
-```{r Generate visuals for paper}
+```{r Generate tables for paper}
 #| include = FALSE
+
 renamed_models <- function(model) {
   setNames(
     models[[model]],
@@ -616,6 +617,13 @@ generate_table(
   renamed_models("saccade_logit"),
   "Saccade logit model"
 )
+```
+
+## Generate visuals for paper
+
+```{r Generate visuals for paper}
+#| echo = FALSE,
+#| message = FALSE
 
 # BrAC slope by KSS score
 sdlp_kss_bac_coef_plots <- lapply(
@@ -644,11 +652,12 @@ sdlp_kss_bac_coef_plots <- lapply(
       )
   }
 )
-for (val in c(180, 300, 600)) {
-  ggsave(
-    glue("./output/sdlp_kss_bac_coef_plot_{val}.svg"),
-    sdlp_kss_bac_coef_plots[[as.character(val)]]
-  )
+for (val in c("180", "300", "600")) {
+  sdlp_kss_bac_coef_plots[[val]] %>%
+    {
+      ggsave(glue("./output/sdlp_kss_bac_coef_plot_{val}.svg"), .)
+      print(.)
+    }
 }
 rm(val)
 
@@ -705,5 +714,8 @@ non_aug %>%
       ) +
       scale_x_break(c(6, 9))
   } %>%
-  ggsave("./output/speed_time_series_highlighted.svg", .)
+  {
+    ggsave("./output/speed_time_series_highlighted.svg", .)
+    print(.)
+  }
 ```
