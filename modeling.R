@@ -150,14 +150,14 @@ for (frame_length in as.character(c(180, 300, 600))) {
     data = task_matrix,
     formula = (
       Lane_Departure ~
-      KSS_cent +
-      BAC +
-      BAC * KSS_cent +
-      BAC * Phase +
-      Road_Surface +
-      as.numeric(Drive) +
-      Phase +
-      (1 | Subject) + (1 | Frame_Index)
+        KSS_cent +
+        BAC +
+        BAC * KSS_cent +
+        BAC * Phase +
+        Road_Surface +
+        as.numeric(Drive) +
+        Phase +
+        (1 | Subject) + (1 | Frame_Index)
     ),
     family = "binomial"
   )
