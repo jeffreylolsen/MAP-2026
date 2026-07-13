@@ -630,7 +630,7 @@ sdlp_kss_bac_coef_plots <- lapply(
       component = "cond"
     ) %>%
       as.data.frame() %>%
-      mutate(KSS = KSS_cent + abs(min(KSS_cent)) + 1) %>%
+      mutate(KSS = KSS_cent + abs(min(KSS_cent)) + 1, across(c(BAC.trend, lower.CL, upper.CL), ~ .x / 100 * 30.48)) %>%
       ggplot(aes(x = KSS, y = BAC.trend)) +
       geom_hline(yintercept = 0, color = "darkgray", linewidth = 1, linetype = 4) +
       geom_point() +
