@@ -46,6 +46,8 @@ library(downloadthis)
 library(knitr)
 library(tableone)
 library(gt)
+library(patchwork)
+library(ggplotify)
 
 dir.create("./output", showWarnings = FALSE)
 ```
@@ -750,7 +752,7 @@ for (val in c("180", "300", "600")) {
 rm(val)
 
 # Time-series plot with tasks shaded
-non_aug %>%
+wide_plot <- non_aug %>%
   filter(DaqName == non_aug[[1, "DaqName"]]) %>%
   arrange(Frame_Num) %>%
   filter(!rev(cumall(rev(Vehicle_Speed < 60)))) %>%
@@ -806,4 +808,68 @@ non_aug %>%
     ggsave("./output/speed_time_series_highlighted.svg", .)
     print(.)
   }
+
+zoom_plot <- non_aug %>%
+  filter(DaqName == non_aug[[1, "DaqName"]]) %>%
+  arrange(Frame_Num) %>%
+  filter(!rev(cumall(rev(Vehicle_Speed < 60)))) %>%
+  mutate(Minute = (Frame_Num + 1 - min(Frame_Num)) / 3600) %>%
+  {
+    dd <- .
+    frame0 <- min(dd$Frame_Num)
+    x_to_minute <- function(x) {
+      (non_aug$Frame_Num[match(x, non_aug$X)] + 1 - frame0) / 3600
+    }
+    seg <- task_boundaries_180 %>%
+      filter(Control_Start %in% non_aug$X[non_aug$DaqName == dd$DaqName[1]]) %>%
+      mutate(Task_Num = row_number()) %>%
+      filter(Task_Num == 3) %>%
+      mutate(
+        Control_xmin = x_to_minute(Control_Start),
+        Control_xmax = x_to_minute(Control_End),
+        Task_xmin    = x_to_minute(Task_Start),
+        Task_xmax    = x_to_minute(Task_End)
+      )
+    pad <- 0.25
+    plot_data <- dd %>%
+      filter(
+        Minute >= seg$Control_xmin - pad,
+        Minute <= seg$Task_xmax + pad
+      )
+    rects <- bind_rows(
+      seg %>% transmute(xmin = Control_xmin, xmax = Control_xmax, Segment = "Control"),
+      seg %>% transmute(xmin = Task_xmin, xmax = Task_xmax, Segment = "Task")
+    )
+    ggplot(plot_data, aes(x = Minute, y = Vehicle_Speed)) +
+      geom_rect(
+        data = rects, inherit.aes = FALSE,
+        aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Segment),
+        alpha = 0.4
+      ) +
+      geom_line() +
+      coord_cartesian(
+        ylim = c(60, 65),
+        expand = FALSE
+      ) +
+      scale_fill_manual(
+        name = "Segment",
+        values = c("Control" = "blue", "Task" = "red")
+      ) +
+      labs(
+        title = "Vehicle speed around task 3",
+        x = "Minute of drive",
+        y = "Vehicle speed"
+      )
+  } %>%
+  {
+    ggsave("./output/speed_task3_zoom.svg", .)
+    print(.)
+  }
+
+combined_plots <- as.ggplot(wide_plot) / zoom_plot +
+  plot_layout(heights = c(1.2, 1))
+
+  ggsave("./output/speed_with_zoom.svg", combined_plots,
+         width = 8, height = 7)
+     print(combined_plots)
 ```
