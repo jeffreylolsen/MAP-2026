@@ -620,6 +620,12 @@ generate_table(
   renamed_models("saccade_logit"),
   "Saccade logit model"
 )
+generate_table(
+  renamed_models("saccade_zip"),
+  "Saccade ZIP model",
+  shape = component + term ~ model,
+  align = "llrrr"
+)
 
 CreateTableOne(
   data = select(

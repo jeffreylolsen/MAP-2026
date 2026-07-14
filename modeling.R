@@ -76,9 +76,16 @@ for (frame_length in as.character(c(180, 300, 600))) {
 
   # Saccades ZIP model
   models[["saccade_zip"]][[frame_length]] <- glmmTMB(
-    Saccade_Count ~ Phase + BAC + KSS_cent + Road_Surface +
+    Saccade_Count ~
+      BAC +
+      KSS_cent +
+      Road_Surface +
+      BAC * KSS_cent +
+      BAC * Phase +
+      as.numeric(Drive) +
+      Phase +
       (1 | Subject) + (1 | Frame_Index),
-    ziformula = ~1, # What predicts being in the "zero" group?
+    ziformula = ~1,
     family = poisson,
     data = task_matrix
   )
@@ -92,7 +99,7 @@ for (frame_length in as.character(c(180, 300, 600))) {
         KSS_cent +
         Road_Surface +
         BAC * KSS_cent +
-        # BAC * Phase +
+        BAC * Phase +
         as.numeric(Drive) +
         Phase +
         (1 | Subject) + (1 | Frame_Index),
