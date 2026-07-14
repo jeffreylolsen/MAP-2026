@@ -43,6 +43,9 @@ library(plotly)
 library(ggbreak)
 library(qs2)
 library(downloadthis)
+library(knitr)
+library(tableone)
+library(gt)
 
 dir.create("./output", showWarnings = FALSE)
 ```
@@ -617,6 +620,85 @@ generate_table(
   renamed_models("saccade_logit"),
   "Saccade logit model"
 )
+
+CreateTableOne(
+  data = select(
+    task_matrix_300,
+    -c(
+      DaqName,
+      Subject,
+      BAC_cent,
+      KSS_cent,
+      Braking_Events,
+      Frame_Index,
+      Press_Frame
+    )
+  )
+) %>%
+  print(showAllLevels = TRUE, printToggle = FALSE) %>%
+  kable(
+    format = "latex",
+    booktabs = TRUE,
+    caption = "Summary statistics"
+  ) %>%
+  write_lines("./output/summary_stats_table_ext.tex")
+
+# Simple table one with sample size, tasks, and demographic data
+enframe(
+  read.csv("./data/subject_drive_info.csv") %>%
+    distinct(subject_id, .keep_all = TRUE) %>%
+    {
+      l <- nrow(.)
+      disp <- function(data) {
+        glue("{data} ({round(data / l * 100, 1)}\\%)")
+      }
+      list(
+        "No. of tasks" = nrow(wideform_task_matrix_180),
+        "No. of subjects" = length(unique(task_matrix_180$Subject)),
+        "Sex" = "",
+        "\\hspace{1em}Female" = disp(tally(., sex == "Female")),
+        "\\hspace{1em}Male" = disp(tally(., sex == "Male")),
+        "Race" = "",
+        "\\hspace{1em}White" = disp(tally(., str_detect(race, "White"))),
+        "\\hspace{1em}Asian or Asian American" = disp(
+          tally(
+            .,
+            str_detect(race, "Asian or Asian American")
+          )
+        ),
+        "\\hspace{1em}Black or African American" = disp(
+          tally(
+            .,
+            str_detect(race, "Black or African American")
+          )
+        ),
+        "\\hspace{1em}More than one race" = disp(
+          tally(
+            .,
+            str_detect(race, "More than one race")
+          )
+        ),
+        "\\hspace{1em}Prefer not to answer" = disp(
+          tally(
+            .,
+            str_detect(race, "Prefer not to answer")
+          )
+        ),
+        "Hispanic" = "",
+        "\\hspace{1em}Yes" = disp(tally(., hispanic_plus == "Yes")),
+        "\\hspace{1em}No" = disp(tally(., hispanic_plus == "No"))
+      )
+    },
+  name = "Attribute",
+  value = "Count"
+) %>%
+  kable(
+    caption = glue("Summary counts"),
+    format = "latex",
+    booktabs = TRUE,
+    escape = FALSE
+  ) %>%
+  write_lines("./output/table_one.tex")
 ```
 
 ## Generate visuals for paper
