@@ -27,6 +27,14 @@ qs_readm("./data/processed_data.qs")
 
 models <- list()
 
+models[["bac_kss"]] <- non_aug %>%
+  group_by(DaqName) %>%
+  slice(1) %>%
+  ungroup() %>%
+  filter(Drive != 1) %>%
+  select(Start_BAC, KSS_Score) %>%
+  lm(formula = KSS_Score ~ Start_BAC)
+
 for (frame_length in as.character(c(180, 300, 600))) {
   for (var in c("task_matrix", "wideform_task_matrix")) {
     assign(var, get(glue("{var}_{frame_length}")))

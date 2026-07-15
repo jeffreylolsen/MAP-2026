@@ -137,6 +137,10 @@ generate_table <- function(
 ## Preliminary models
 
 ```{r Preliminary models}
+# Background on whether treatment (not the control)
+# show an association between BrAC and KSS
+summary(models[["bac_kss"]])
+
 # Model testing the fixed effects of alcohol (BAC) and fatigue (KSS) on
 # averaged bilateral pupil reactivity,
 # controlling for individual baseline variance
@@ -868,7 +872,8 @@ zoom_plot <- non_aug %>%
 combined_plots <- as.ggplot(wide_plot) / zoom_plot +
   plot_layout(heights = c(1.2, 1))
 
-  ggsave("./output/speed_with_zoom.svg", combined_plots,
-         width = 8, height = 7)
-     print(combined_plots)
+ggsave("./output/speed_with_zoom.svg", combined_plots,
+  width = 8, height = 7
+)
+print(combined_plots)
 ```
