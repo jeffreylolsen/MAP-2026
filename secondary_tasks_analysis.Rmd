@@ -109,15 +109,14 @@ generate_table <- function(
       "as.numeric(Drive)" = "Drive \\#",
       "SD (Intercept Subject)" = "Subject baseline SD",
       "SD (Intercept Frame_Index)" = "Unique task baseline SD",
-      "Lat_Dev_abs_init" = "Initial lateral deviation"
+      "Lat_Dev_abs_init" = "Initial lateral deviation",
+      "KSS_cent:BAC" = "KSS (median-centered):BrAC",
+      "BAC:KSS_cent" = "BrAC:KSS (median-centered)",
+      "BAC:PhaseTask" = "BrAC:Phase (Task)",
+      "PhaseTask:BAC" = "Phase (Task):BrAC",
+      "Lat_Dev_SD_Control:BAC" = "Baseline SDLP:BrAC",
+      "BAC:Lat_Dev_SD_Control" = "BrAC:Baseline SDLP"
     ),
-
-    #   gof_map = data.frame(
-    #     raw = c("nobs", "r2.marginal", "r2.conditional"),
-    #     clean = c("N", "Marginal $R^2$", "Conditional $R^2$"),
-    #     fmt = c(0, 3, 3)
-    #   ),
-
     gof_omit = ".*",
     escape = FALSE,
     notes = list("+ p < 0.1, * p < 0.05, ** p < 0.01, *** p < 0.001")
@@ -737,7 +736,7 @@ sdlp_kss_bac_coef_plots <- lapply(
       scale_y_continuous(breaks = function(y) floor(min(y)):ceiling(max(y))) +
       labs(
         x = "KSS score",
-        y = "Effect of BrAC on SDLP (95% CI)",
+        y = "Effect of BrAC on SDLP (cm per 0.01 g/dL, 95% CI)",
         title = glue("Effect of BrAC on SDLP by KSS score ({x / 60}s window)")
       )
   }

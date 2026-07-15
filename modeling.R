@@ -125,7 +125,7 @@ for (frame_length in as.character(c(180, 300, 600))) {
           KSS_cent +
           BAC +
           Road_Surface +
-          as.numeric(Drive) + # To adjust for learning effect
+          as.numeric(Drive) +
           Lat_Dev_SD_Control * BAC +
           (1 | Subject)
       )
