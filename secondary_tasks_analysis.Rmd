@@ -139,6 +139,13 @@ generate_table <- function(
 ```{r Preliminary models}
 # Background on whether treatment (not the control)
 # show an association between BrAC and KSS
+# non_aug %>%
+#   group_by(DaqName) %>%
+#   slice(1) %>%
+#   ungroup() %>%
+#   filter(Drive != 1) %>%
+#   ggplot(aes(x = Start_BAC, y = KSS_Score)) +
+#   geom_point()
 summary(models[["bac_kss"]])
 
 # Model testing the fixed effects of alcohol (BAC) and fatigue (KSS) on
