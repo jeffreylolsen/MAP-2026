@@ -821,56 +821,66 @@ zoom_plot <- non_aug %>%
     dd <- .
     frame0 <- min(dd$Frame_Num)
     x_to_minute <- function(x) {
-      (non_aug$Frame_Num[match(x, non_aug$X)] + 1 - frame0) / 3600
+      (dd$Frame_Num[match(x, dd$X)] + 1 - frame0) / 3600
     }
-    seg <- task_boundaries_180 %>%
-      filter(Control_Start %in% non_aug$X[non_aug$DaqName == dd$DaqName[1]]) %>%
-      mutate(Task_Num = row_number()) %>%
-      filter(Task_Num == 3) %>%
-      mutate(
-        Control_xmin = x_to_minute(Control_Start),
-        Control_xmax = x_to_minute(Control_End),
-        Task_xmin    = x_to_minute(Task_Start),
-        Task_xmax    = x_to_minute(Task_End)
+
+    all_rects <- purrr::map_dfr(c("180", "300", "600"), function(frames) {
+      seg <- get(glue("task_boundaries_{frames}")) %>%
+        filter(Control_Start %in% dd$X) %>%
+        mutate(Task_Num = row_number()) %>%
+        filter(Task_Num == 4)
+
+      bind_rows(
+        tibble(
+          xmin = x_to_minute(seg$Control_Start),
+          xmax = x_to_minute(seg$Control_End),
+          Segment = "Control", Window = frames
+        ),
+        tibble(
+          xmin = x_to_minute(seg$Task_Start),
+          xmax = x_to_minute(seg$Task_End),
+          Segment = "Task", Window = frames
+        )
       )
+    })
+
+    bounds_600 <- filter(all_rects, Window == "600")
     pad <- 0.25
     plot_data <- dd %>%
       filter(
-        Minute >= seg$Control_xmin - pad,
-        Minute <= seg$Task_xmax + pad
+        Minute >= min(bounds_600$xmin) - pad,
+        Minute <= max(bounds_600$xmax) + pad
       )
-    rects <- bind_rows(
-      seg %>% transmute(xmin = Control_xmin, xmax = Control_xmax, Segment = "Control"),
-      seg %>% transmute(xmin = Task_xmin, xmax = Task_xmax, Segment = "Task")
-    )
+
     ggplot(plot_data, aes(x = Minute, y = Vehicle_Speed)) +
       geom_rect(
-        data = rects, inherit.aes = FALSE,
-        aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = Segment),
-        alpha = 0.4
+        data = all_rects,
+        inherit.aes = FALSE,
+        aes(
+          xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf,
+          fill = Segment, linetype = Window
+        ),
+        color = "black",
+        alpha = 0.1,
+        linewidth = 0.6
       ) +
       geom_line() +
-      coord_cartesian(
-        ylim = c(60, 65),
-        expand = FALSE
-      ) +
+      coord_cartesian(ylim = c(60, 65), expand = FALSE) +
       scale_fill_manual(
-        name = "Segment",
         values = c("Control" = "blue", "Task" = "red")
       ) +
+      scale_linetype_manual(
+        values = c("180" = "solid", "300" = "dashed", "600" = "dotted")
+      ) +
       labs(
-        title = "Vehicle speed around task 3",
+        title = "Vehicle speed around task 4",
         x = "Minute of drive",
         y = "Vehicle speed"
       )
-  } %>%
-  {
-    ggsave("./output/speed_task3_zoom.svg", .)
-    print(.)
   }
 
 combined_plots <- as.ggplot(wide_plot) / zoom_plot +
-  plot_layout(heights = c(1.2, 1))
+  plot_layout(heights = c(2, 1))
 
 ggsave("./output/speed_with_zoom.svg", combined_plots,
   width = 8, height = 7
