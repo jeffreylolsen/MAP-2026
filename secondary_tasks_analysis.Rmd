@@ -536,6 +536,15 @@ lapply(models[["lat_dev_phase"]],
   legend.title = "KSS - 5\n(median centered)",
   title = "Interaction plot: SDLP vs BrAC"
 )
+lapply(models[["lat_dev_phase"]],
+  plot_model,
+  type = "pred",
+  terms = c("BAC", "Phase"),
+  ci.lvl = 0.95,
+  axis.title = c("BrAC", "Phase"),
+  legend.title = "Segment type",
+  title = "Interaction plot: SDLP vs Phase"
+)
 lapply(
   models[["lat_dev_phase_visreg"]],
   function(x) {
@@ -589,6 +598,16 @@ task_matrix_180 %>%
       coord_cartesian(expand = FALSE) +
       theme_minimal()
   }
+
+lapply(models[["per_close"]],
+  plot_model,
+  type = "pred",
+  terms = c("BAC", "Phase"),
+  ci.lvl = 0.95,
+  axis.title = c("BrAC", "Phase"),
+  legend.title = "Segment type",
+  title = "Interaction plot: Per Close vs Phase"
+)
 
 lapply(models[["per_close"]], summary)
 ```
