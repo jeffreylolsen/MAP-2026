@@ -159,7 +159,7 @@ lapply(models[["sdlp"]], summary)
 # Speed_SD_Diff model predicted by alcohol and fatigue
 lapply(models[["speed"]], summary)
 
-# Lane departure proportion difference (you already build this column)
+# Lane departure proportion difference
 lapply(models[["dev"]], summary)
 
 for (metric in c(
@@ -183,6 +183,7 @@ for (metric in c(
     cat("\n")
   }
 }
+rm(metric, val)
 ```
 
 ## Preliminary lane deviation analysis
@@ -252,9 +253,9 @@ ggplot(
 ## Box plots to compare control & task phases
 
 ```{r Box Plots for task matrix}
-plot_data <- task_matrix_180 %>% filter(!is.na(Avg_Pupil_Diameter_mean))
-
-ggplot(plot_data, aes(x = Phase, y = Avg_Pupil_Diameter_mean)) +
+task_matrix_180 %>%
+  filter(!is.na(Avg_Pupil_Diameter_mean)) %>%
+  ggplot(aes(x = Phase, y = Avg_Pupil_Diameter_mean)) +
   geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
   theme_minimal() +
   labs(title = "Pupil Dilation: Anticipation vs Reaction")
@@ -264,7 +265,7 @@ ggplot(plot_data, aes(x = Phase, y = Avg_Pupil_Diameter_mean)) +
 
 ```{r Plots of trends around button presses}
 # Get left button press indices
-left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X
+#left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X
 
 # Create a list of filtered data frames
 obs_around_press <- bind_rows(lapply(
@@ -320,6 +321,7 @@ metrics <- list(
 for (metric in metrics) {
   print(plot_metric_around_task(metric$variable, metric$ymin, metric$ymax, 1))
 }
+rm(metric, metrics, obs_around_press)
 ```
 
 Interpretability relies on the assumption that trends in eye metrics
@@ -328,24 +330,22 @@ change faster/slower proportional to the task reaction time.
 ## Pupil diameter by KSS and drive
 
 ```{r Pupil diameter by KSS and drive}
-eye_kss <- non_aug %>%
+non_aug %>%
   filter(!is.na(Avg_Pupil_Diameter) & !is.na(KSS_Score)) %>%
   select(KSS_Score, Frame_Num, Drive, Avg_Pupil_Diameter) %>%
   group_by(KSS_Score, Frame_Num, Drive) %>%
   summarize(
     Avg_Pupil_Diameter = mean(Avg_Pupil_Diameter),
     .groups = "drop"
-  )
-
-ggplot(
-  data = eye_kss,
-  aes(
-    x = Frame_Num,
-    y = Avg_Pupil_Diameter,
-    group = factor(KSS_Score),
-    color = as.numeric(as.character(KSS_Score))
-  )
-) +
+  ) %>%
+  ggplot(
+    aes(
+      x = Frame_Num,
+      y = Avg_Pupil_Diameter,
+      group = factor(KSS_Score),
+      color = as.numeric(as.character(KSS_Score))
+    )
+  ) +
   geom_smooth(
     linewidth = 0.3, se = FALSE,
     method = "bam", formula = y ~ s(x, bs = "cs")
@@ -742,7 +742,7 @@ enframe(
 
 ```{r Generate visuals for paper}
 #| echo = FALSE,
-#| message = FALSE,
+#| message = FALSE
 
 
 # BrAC slope by KSS score
@@ -914,4 +914,5 @@ ggsave("./output/speed_with_zoom.svg", combined_plots,
   width = 8, height = 7
 )
 print(combined_plots)
+rm(wide_plot, zoom_plot, combined_plots)
 ```
