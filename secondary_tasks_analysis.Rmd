@@ -89,6 +89,7 @@ generate_table <- function(
   title,
   shape = term ~ model,
   align = "lrrr",
+  additional_note = NULL,
   ...
 ) {
   modelsummary(
@@ -98,8 +99,8 @@ generate_table <- function(
     output = "latex",
     stars = TRUE,
     shape = shape,
-    estimate = "{estimate}",
-    statistic = c("({std.error})", "{stars}"),
+    estimate = "{estimate}{stars}",
+    statistic = c("conf.int", "p.value"),
     align = align,
     coef_rename = c(
       "(Intercept)" = "Intercept",
@@ -120,15 +121,28 @@ generate_table <- function(
     ),
     gof_omit = ".*",
     escape = FALSE,
-    notes = list("+ p < 0.1, * p < 0.05, ** p < 0.01, *** p < 0.001")
+    notes = list(
+      paste(
+        c(
+          "+ p < 0.1, * p < 0.05, ** p < 0.01, *** p < 0.001.\\\\",
+          "95\\% confidence intervals are in brackets.",
+          additional_note
+        ),
+        collapse = " "
+      )
+    )
   ) %>%
     as.character() %>%
     str_replace_all(
       c(
-        "component" = "Component",
+        "\\\\begin\\{table\\}" = "\\\\begin{table}\n\\\\small",
+        "component(?!s are reported)" = "Component",
         "conditional" = "Conditional",
         "zero_inflated" = "Zero-inflated",
-        "dispersion" = "Dispersion"
+        "dispersion" = "Dispersion",
+        " 0\\." = " .",
+        "-0\\." = "-.",
+        "<0\\." = "<."
       )
     ) %>%
     write_lines(glue("./output/{str_replace_all(title, ' ', '_')}.tex"))
@@ -266,7 +280,7 @@ task_matrix_180 %>%
 
 ```{r Plots of trends around button presses}
 # Get left button press indices
-#left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X
+# left_button_press_indices <- filter(non_aug, Left_Button_Press == 1)$X
 
 # Create a list of filtered data frames
 obs_around_press <- bind_rows(lapply(
@@ -638,7 +652,7 @@ generate_table(
   renamed_models("lat_dev_phase"),
   "SDLP linear model"
 )
-generate_table(
+generate_table( # Not used in paper
   renamed_models("lane_departure"),
   "Lane departure logit model"
 )
@@ -646,9 +660,11 @@ generate_table(
   renamed_models("per_close"),
   "Per Close beta model",
   shape = component + term ~ model,
-  align = "llrrr"
+  align = "llrrr",
+  exponentiate = TRUE,
+  additional_note = "Estimates are reported as odds ratios (OR)."
 )
-generate_table(
+generate_table( # Not used in paper
   renamed_models("saccade_logit"),
   "Saccade logit model"
 )
@@ -656,28 +672,53 @@ generate_table(
   renamed_models("saccade_zip"),
   "Saccade ZIP model",
   shape = component + term ~ model,
-  align = "llrrr"
+  align = "llrrr",
+  exponentiate = TRUE,
+  additional_note = "Estimates for the count components are reported as incidence rate ratios (IRR). Estimates for the zero-inflated components are reported as odds ratios (OR)."
 )
 
 CreateTableOne(
-  data = select(
-    task_matrix_300,
-    -c(
-      DaqName,
-      Subject,
-      BAC_cent,
-      KSS_cent,
-      Braking_Events,
-      Frame_Index,
-      Press_Frame
+  data = task_matrix_300 %>%
+    mutate("Reaction time (ms)" = Reaction_Frames * (1000 / 60)) %>%
+    select(
+      -c(
+        DaqName,
+        Subject,
+        BAC_cent,
+        KSS_cent,
+        Braking_Events,
+        Frame_Index,
+        Press_Frame,
+        Frame_Count,
+        Reaction_Frames
+      )
+    ) %>%
+    rename(
+      "Left pupil mean diameter" = LPupil_Diameter_mean,
+      "Right pupil mean diameter" = RPupil_Diameter_mean,
+      "Both pupils mean diameter" = Avg_Pupil_Diameter_mean,
+      "Mean gaze pitch" = Gaze_Pitch_mean,
+      "Mean gaze yaw" = Gaze_Yaw_mean,
+      "Lane departure occurred" = Lane_Departure,
+      "Proportion of time out of lane" = Deviation_Frames_prop,
+      "Blink count" = Blink_Count,
+      "Proportion of time with eyes closed" = Per_Close,
+      "Lateral deviation at start of segment" = Lat_Dev_abs_init,
+      "SDLP" = Lat_Dev_SD,
+      "Standard deviation of speed" = Speed_SD,
+      "Mean speed" = Speed_mean,
+      "Mean brake force" = Brake_Force_mean,
+      "Saccade count" = Saccade_Count,
+      "Proportion of time in saccades" = Saccade_Prop,
+      "Road surface" = Road_Surface
     )
-  )
 ) %>%
   print(showAllLevels = TRUE, printToggle = FALSE) %>%
   kable(
     format = "latex",
     booktabs = TRUE,
-    caption = "Summary statistics"
+    align = "lr",
+    caption = "Control/task 5s segment summary statistics"
   ) %>%
   write_lines("./output/summary_stats_table_ext.tex")
 
