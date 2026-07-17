@@ -21,6 +21,7 @@ setwd(this.dir())
 if (!file.exists("./data/processed_data.qs") |
   file.mtime("./data/processed_data.qs") <
     file.mtime("./data_processing.R")) {
+  cat("\nProcessing data, script updated since last run.\n", file = stderr())
   local(source("./data_processing.R", local = TRUE))
 }
 qs_readm("./data/processed_data.qs")

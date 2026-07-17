@@ -75,6 +75,7 @@ setwd(this.dir())
 if (!file.exists("./data/final_data.qs") |
   file.mtime("./data/final_data.qs") <
     file.mtime("./modeling.R")) {
+  cat("\nGenerating models, script updated since last run.\n", file = stderr())
   local(source("./modeling.R", local = TRUE))
 }
 qs_readm("./data/final_data.qs")
