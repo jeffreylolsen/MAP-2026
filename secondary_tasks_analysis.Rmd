@@ -732,8 +732,8 @@ enframe(
   kable(
     caption = glue("Summary counts"),
     format = "latex",
-    booktabs = TRUE,
-    escape = FALSE
+    escape = FALSE,
+    linesep = ""
   ) %>%
   write_lines("./output/table_one.tex")
 ```
@@ -742,7 +742,8 @@ enframe(
 
 ```{r Generate visuals for paper}
 #| echo = FALSE,
-#| message = FALSE
+#| message = FALSE,
+
 
 # BrAC slope by KSS score
 sdlp_kss_bac_coef_plots <- lapply(
@@ -905,8 +906,9 @@ zoom_plot <- non_aug %>%
       )
   }
 
-combined_plots <- as.ggplot(wide_plot) / zoom_plot +
-  plot_layout(heights = c(2, 1))
+combined_plots <- as.ggplot(wide_plot + theme(legend.position = "none")) /
+  (zoom_plot + theme(legend.position = "bottom")) +
+  plot_layout(heights = c(1.2, 1))
 
 ggsave("./output/speed_with_zoom.svg", combined_plots,
   width = 8, height = 7
