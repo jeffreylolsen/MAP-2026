@@ -2,15 +2,9 @@ import sys
 import site
 
 site.addsitedir(site.getusersitepackages())
-import scipy
 import pandas as pd
 import numpy as np
-import os
-import matplotlib.pyplot as plt
-import sklearn
 from scipy.io import loadmat
-import sktime
-import pyarrow
 
 ## Directory of all .MAT files
 matdata_dir = "./data/matfiles"
