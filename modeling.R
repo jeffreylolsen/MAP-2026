@@ -204,6 +204,19 @@ for (frame_length in as.character(c(180, 300, 600))) {
       (1 | Subject) + (1 | Frame_Index)
   )
 
+  # Reaction time model
+  models[["reaction_time"]] <- lmer(
+    data = wideform_task_matrix %>%
+      mutate(Reaction_Time = Reaction_Frames * (1000 / 60)),
+    formula = Reaction_Time ~
+      KSS_cent +
+      BAC +
+      BAC * KSS_cent +
+      Road_Surface +
+      as.numeric(Drive) +
+      (1 | Subject)
+  )
+
   # Per Close model
   models[["per_close"]][[frame_length]] <- glmmTMB(
     # A single observation of Per_Close = 1,

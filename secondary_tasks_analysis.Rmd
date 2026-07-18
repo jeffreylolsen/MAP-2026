@@ -581,6 +581,12 @@ lapply(models[["speed_sd"]], summary)
 lapply(models[["speed_mean"]], summary)
 ```
 
+## Reaction time LMM
+
+```{r Reaction time LMM}
+summary(models[["reaction_time"]])
+```
+
 ## `Per_Close` analysis
 
 ```{r Per_Close analysis}
