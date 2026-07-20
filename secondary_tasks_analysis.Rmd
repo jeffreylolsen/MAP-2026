@@ -46,6 +46,7 @@ library(downloadthis)
 library(knitr)
 library(tableone)
 library(gt)
+library(rsvg)
 library(patchwork)
 library(ggplotify)
 
@@ -967,6 +968,7 @@ combined_plots <- as.ggplot(wide_plot + theme(legend.position = "none")) /
 ggsave("./output/speed_with_zoom.svg", combined_plots,
   width = 8, height = 7
 )
+rsvg_pdf("./output/speed_with_zoom.svg", "./output/speed_with_zoom.pdf")
 print(combined_plots)
 rm(wide_plot, zoom_plot, combined_plots)
 ```
