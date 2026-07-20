@@ -883,7 +883,7 @@ wide_plot <- non_aug %>%
         )
       ) +
       labs(
-        title = "Vehicle speed time series, highlighting tasks",
+        # title = "Vehicle speed time series, highlighting tasks",
         x = "Minute of drive",
         y = "Vehicle speed"
       ) +
@@ -955,7 +955,7 @@ zoom_plot <- non_aug %>%
         values = c("180" = "solid", "300" = "dashed", "600" = "dotted")
       ) +
       labs(
-        title = "Vehicle speed around task 4",
+        title = "Task 4",
         x = "Minute of drive",
         y = "Vehicle speed"
       )
