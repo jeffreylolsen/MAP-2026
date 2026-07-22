@@ -759,7 +759,8 @@ CreateTableOne(
     format = "latex",
     booktabs = TRUE,
     align = "lr",
-    caption = "Control/task 5s segment summary statistics"
+    caption = "Control/task 5s segment summary statistics",
+    label = "summary_stats_table_ext"
   ) %>%
   write_lines("./output/summary_stats_table_ext.tex")
 
@@ -816,7 +817,8 @@ enframe(
     caption = glue("Summary counts"),
     format = "latex",
     escape = FALSE,
-    linesep = ""
+    linesep = "",
+    label = "table_one"
   ) %>%
   write_lines("./output/table_one.tex")
 ```
