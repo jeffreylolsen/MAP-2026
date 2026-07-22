@@ -1,18 +1,10 @@
 library(tidyverse)
-library(dplyr)
 library(lme4)
 library(lmerTest)
 library(glue)
-library(mgcv)
-library(data.table)
 library(this.path)
 library(glmmTMB)
-library(sjPlot)
-library(performance)
 library(visreg)
-library(modelsummary)
-library(emmeans)
-library(plotly)
 library(qs2)
 
 # Read in processed data
