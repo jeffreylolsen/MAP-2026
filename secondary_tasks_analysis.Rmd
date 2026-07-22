@@ -26,7 +26,6 @@ knitr::opts_chunk$set(
 )
 
 library(tidyverse)
-library(dplyr)
 library(lme4)
 library(lmerTest)
 library(glue)
@@ -830,8 +829,8 @@ enframe(
 
 
 # BrAC slope by KSS score
-sdlp_kss_bac_coef_plots <- lapply(
-  list("180" = 180, "300" = 300, "600" = 600),
+sdlp_kss_bac_coef_plot <- map_dfr(
+  c(180, 300, 600),
   function(x) {
     emtrends(
       object = models[["lat_dev_phase"]][[as.character(x)]],
@@ -847,34 +846,45 @@ sdlp_kss_bac_coef_plots <- lapply(
         # Just transforming KSS_cent back into raw KSS
         KSS = KSS_cent + abs(min(KSS_cent)) + 1,
         # Shifting estimates of SDLP up into centimeters
-        across(c(BAC.trend, lower.CL, upper.CL), ~ .x * 30.48)
-      ) %>%
-      ggplot(aes(x = KSS, y = BAC.trend)) +
-      geom_hline(
-        yintercept = 0,
-        color = "darkgray",
-        linewidth = 1,
-        linetype = 4
-      ) +
-      geom_point() +
-      geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 1 / 3) +
-      scale_x_continuous(breaks = 1:9) +
-      scale_y_continuous(breaks = function(y) floor(min(y)):ceiling(max(y))) +
-      labs(
-        x = "KSS score",
-        y = "Effect of BrAC on SDLP (cm per 0.01 g/dL, 95% CI)",
-        title = glue("Effect of BrAC on SDLP by KSS score ({x / 60}s window)")
+        across(c(BAC.trend, lower.CL, upper.CL), ~ .x * 30.48),
+        # Segment length for coloring
+        `Segment length` = glue("{x / 60}s")
       )
   }
+) %>%
+  # Make sure order is correct in legend
+  mutate(`Segment length` = factor(
+    `Segment length`,
+    levels = c("3s", "5s", "10s")
+  )) %>%
+  ggplot(aes(x = KSS, y = BAC.trend, color = `Segment length`)) +
+  geom_hline(
+    yintercept = 0,
+    color = "darkgray",
+    linewidth = 1,
+    linetype = 2
+  ) +
+  geom_point(position = position_dodge(width = 1 / 3)) +
+  geom_errorbar(
+    aes(ymin = lower.CL, ymax = upper.CL),
+    width = 1 / 3,
+    position = position_dodge(width = 1 / 3)
+  ) +
+  scale_x_continuous(breaks = 1:9) +
+  scale_y_continuous(breaks = function(y) floor(min(y)):ceiling(max(y))) +
+  labs(
+    x = "KSS score",
+    y = "Effect of BrAC on SDLP (cm per 0.01 g/dL, 95% CI)",
+    color = "Segment\nlength"
+  ) +
+  theme(legend.title = element_text(hjust = 1 / 2))
+
+ggsave("./output/sdlp_kss_bac_coef_plot.svg", sdlp_kss_bac_coef_plot)
+rsvg_pdf(
+  "./output/sdlp_kss_bac_coef_plot.svg",
+  "./output/sdlp_kss_bac_coef_plot.pdf"
 )
-for (val in c("180", "300", "600")) {
-  sdlp_kss_bac_coef_plots[[val]] %>%
-    {
-      ggsave(glue("./output/sdlp_kss_bac_coef_plot_{val}.svg"), .)
-      print(.)
-    }
-}
-rm(val)
+print(sdlp_kss_bac_coef_plot)
 
 # Time-series plot with tasks shaded
 wide_plot <- non_aug %>%
