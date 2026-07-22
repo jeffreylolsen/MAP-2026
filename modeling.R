@@ -31,6 +31,22 @@ models[["bac_kss"]] <- non_aug %>%
   mutate(Start_BAC = Start_BAC * 100) %>%
   lm(formula = KSS_Score ~ Start_BAC)
 
+# Functions with default args to generate similar control objects
+lmer_ctrl <- function(optimizer = "bobyqa", maxfun = 1e5) {
+  lmerControl(
+    optimizer = optimizer,
+    optCtrl = list(maxfun = maxfun),
+    check.conv.singular = .makeCC(action = "ignore", tol = 1e-4)
+  )
+}
+glmer_ctrl <- function(optimizer = "bobyqa", maxfun = 2e5) {
+  glmerControl(
+    optimizer = optimizer,
+    optCtrl = list(maxfun = maxfun),
+    check.conv.singular = .makeCC(action = "ignore", tol = 1e-4)
+  )
+}
+
 for (frame_length in as.character(c(180, 300, 600))) {
   for (var in c("task_matrix", "wideform_task_matrix")) {
     assign(
@@ -48,7 +64,8 @@ for (frame_length in as.character(c(180, 300, 600))) {
       BAC +
       KSS_cent +
       (1 | Subject),
-    data = wideform_task_matrix
+    data = wideform_task_matrix,
+    control = lmer_ctrl()
   )
 
   models[["sdlp"]][[frame_length]] <- lmer(
@@ -56,21 +73,24 @@ for (frame_length in as.character(c(180, 300, 600))) {
       BAC +
       KSS_cent +
       (1 | Subject),
-    data = wideform_task_matrix
+    data = wideform_task_matrix,
+    control = lmer_ctrl()
   )
 
   models[["speed"]][[frame_length]] <- lmer(
     Speed_SD_diff ~ BAC +
       KSS_cent +
       (1 | Subject),
-    data = wideform_task_matrix
+    data = wideform_task_matrix,
+    control = lmer_ctrl()
   )
 
   models[["dev"]][[frame_length]] <- lmer(
     Deviation_Frames_prop_diff ~ BAC +
       KSS_cent +
       (1 | Subject),
-    data = wideform_task_matrix
+    data = wideform_task_matrix,
+    control = lmer_ctrl()
   )
 
   # Pupil diameter difference
@@ -80,7 +100,8 @@ for (frame_length in as.character(c(180, 300, 600))) {
       KSS_cent +
       as.numeric(Drive) +
       (1 | Subject),
-    data = wideform_task_matrix
+    data = wideform_task_matrix,
+    control = lmer_ctrl()
   )
 
   # Saccades ZIP model
@@ -112,8 +133,11 @@ for (frame_length in as.character(c(180, 300, 600))) {
         as.numeric(Drive) +
         Phase +
         (1 | Subject) + (1 | Frame_Index),
-    family = "binomial"
+    family = "binomial",
+    nAGQ = 0,
+    control = glmer_ctrl(maxfun = 5e5)
   )
+
 
   # Reaction time models
   models[["rt_driving"]][[frame_length]] <- lmer(
@@ -123,7 +147,8 @@ for (frame_length in as.character(c(180, 300, 600))) {
       Road_Surface +
       as.numeric(Drive) + # Drive term to adjust for learning effect
       (1 | Subject),
-    data = wideform_task_matrix
+    data = wideform_task_matrix,
+    control = lmer_ctrl()
   )
   models[["reaction_vs_latdev_by_drive"]][[frame_length]] <-
     lmer(
@@ -137,7 +162,8 @@ for (frame_length in as.character(c(180, 300, 600))) {
           as.numeric(Drive) +
           Lat_Dev_SD_Control * BAC +
           (1 | Subject)
-      )
+      ),
+      control = lmer_ctrl()
     )
 
   # SDLP model
@@ -152,7 +178,8 @@ for (frame_length in as.character(c(180, 300, 600))) {
       Road_Surface +
       as.numeric(Drive) +
       Phase +
-      (1 | Subject) + (1 | Frame_Index)
+      (1 | Subject) + (1 | Frame_Index),
+    control = lmer_ctrl()
   )
   models[["lat_dev_phase_visreg"]][[frame_length]] <- visreg(
     models[["lat_dev_phase"]][[frame_length]],
@@ -175,7 +202,8 @@ for (frame_length in as.character(c(180, 300, 600))) {
         Phase +
         (1 | Subject) + (1 | Frame_Index)
     ),
-    family = "binomial"
+    family = "binomial",
+    control = glmer_ctrl()
   )
 
   # Speed models
@@ -189,7 +217,8 @@ for (frame_length in as.character(c(180, 300, 600))) {
       Road_Surface +
       as.numeric(Drive) +
       Phase +
-      (1 | Subject) + (1 | Frame_Index)
+      (1 | Subject) + (1 | Frame_Index),
+    control = lmer_ctrl()
   )
   models[["speed_mean"]][[frame_length]] <- lmer(
     data = task_matrix,
@@ -201,7 +230,8 @@ for (frame_length in as.character(c(180, 300, 600))) {
       Road_Surface +
       as.numeric(Drive) +
       Phase +
-      (1 | Subject) + (1 | Frame_Index)
+      (1 | Subject) + (1 | Frame_Index),
+    control = lmer_ctrl()
   )
 
   # Reaction time model
@@ -214,7 +244,8 @@ for (frame_length in as.character(c(180, 300, 600))) {
       BAC * KSS_cent +
       Road_Surface +
       as.numeric(Drive) +
-      (1 | Subject)
+      (1 | Subject),
+    control = lmer_ctrl()
   )
 
   # Per Close model
@@ -250,7 +281,8 @@ for (frame_length in as.character(c(180, 300, 600))) {
         Road_Surface +
         as.numeric(Drive) +
         (1 | Subject) + (1 | Frame_Index)
-    )
+    ),
+    control = lmer_ctrl()
   )
 }
 rm(frame_length, task_matrix, wideform_task_matrix)
