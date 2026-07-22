@@ -127,6 +127,7 @@ generate_table <- function(
         c(
           "+ p < 0.1, * p < 0.05, ** p < 0.01, *** p < 0.001.\\\\",
           "95\\% confidence intervals are in brackets.",
+          "BrAC is reported in units of 0.01 g/dL.",
           additional_note
         ),
         collapse = " "
@@ -168,6 +169,8 @@ non_aug %>%
     title = "Fatigue vs impairment across dosed drives"
   ) +
   geom_smooth(method = "lm", se = TRUE)
+
+# Model uses BrAC units of 0.01 g/dL
 summary(models[["bac_kss"]])
 
 # Model testing the fixed effects of alcohol (BAC) and fatigue (KSS) on
@@ -549,28 +552,44 @@ lapply(models[["reaction_vs_latdev_by_drive"]], summary)
 
 ```{r SDLP by task segment}
 lapply(models[["lat_dev_phase"]], summary)
-lapply(models[["lat_dev_phase"]],
-  plot_model,
-  type = "pred",
-  terms = c("BAC", "KSS_cent"),
-  ci.lvl = 0.95,
-  axis.title = c("BrAC", "SDLP"),
-  legend.title = "KSS - 5\n(median centered)",
-  title = "Interaction plot: SDLP vs BrAC"
+lapply(
+  models[["lat_dev_phase"]],
+  function(model) {
+    plot_model(
+      model,
+      type = "pred",
+      terms = c("BAC", "KSS_cent"),
+      ci.lvl = 0.95,
+      axis.title = c("BrAC", "SDLP"),
+      legend.title = "KSS - 5\n(median centered)",
+      title = "Interaction plot: SDLP vs BrAC"
+    ) + scale_x_continuous(labels = function(x) x / 100)
+  }
 )
-lapply(models[["lat_dev_phase"]],
-  plot_model,
-  type = "pred",
-  terms = c("BAC", "Phase"),
-  ci.lvl = 0.95,
-  axis.title = c("BrAC", "Phase"),
-  legend.title = "Segment type",
-  title = "Interaction plot: SDLP vs Phase"
+lapply(
+  models[["lat_dev_phase"]],
+  function(model) {
+    plot_model(
+      model,
+      type = "pred",
+      terms = c("BAC", "Phase"),
+      ci.lvl = 0.95,
+      axis.title = c("BrAC", "Phase"),
+      legend.title = "Segment type",
+      title = "Interaction plot: SDLP vs Phase"
+    ) + scale_x_continuous(labels = function(x) x / 100)
+  }
 )
 lapply(
   models[["lat_dev_phase_visreg"]],
   function(x) {
-    print(plot(x, layout = c(3, 1)))
+    print(
+      plot(
+        x,
+        layout = c(3, 1),
+        gg = TRUE
+      ) + scale_x_continuous(labels = function(x) x / 100)
+    )
   }
 )
 ```
@@ -627,14 +646,19 @@ task_matrix_180 %>%
       theme_minimal()
   }
 
-lapply(models[["per_close"]],
-  plot_model,
-  type = "pred",
-  terms = c("BAC", "Phase"),
-  ci.lvl = 0.95,
-  axis.title = c("BrAC", "Phase"),
-  legend.title = "Segment type",
-  title = "Interaction plot: Per Close vs Phase"
+lapply(
+  models[["per_close"]],
+  function(model) {
+    plot_model(
+      model,
+      type = "pred",
+      terms = c("BAC", "Phase"),
+      ci.lvl = 0.95,
+      axis.title = c("BrAC", "Phase"),
+      legend.title = "Segment type",
+      title = "Interaction plot: Per Close vs Phase"
+    ) + scale_x_continuous(labels = function(x) x / 100)
+  }
 )
 
 lapply(models[["per_close"]], summary)
@@ -687,7 +711,12 @@ generate_table(
   shape = component + term ~ model,
   align = "llrrr",
   exponentiate = TRUE,
-  additional_note = "Estimates for the count components are reported as incidence rate ratios (IRR). Estimates for the zero-inflated components are reported as odds ratios (OR)."
+  additional_note = paste(
+    "Estimates for the count components are reported as",
+    "incidence rate ratios (IRR).",
+    "Estimates for the zero-inflated components",
+    "are reported as odds ratios (OR)."
+  )
 )
 
 CreateTableOne(
@@ -813,9 +842,20 @@ sdlp_kss_bac_coef_plots <- lapply(
       component = "cond"
     ) %>%
       as.data.frame() %>%
-      mutate(KSS = KSS_cent + abs(min(KSS_cent)) + 1, across(c(BAC.trend, lower.CL, upper.CL), ~ .x / 100 * 30.48)) %>%
+      # Convert SDLP to centimeters, BAC is already 0.01 g/dL
+      mutate(
+        # Just transforming KSS_cent back into raw KSS
+        KSS = KSS_cent + abs(min(KSS_cent)) + 1,
+        # Shifting estimates of SDLP up into centimeters
+        across(c(BAC.trend, lower.CL, upper.CL), ~ .x * 30.48)
+      ) %>%
       ggplot(aes(x = KSS, y = BAC.trend)) +
-      geom_hline(yintercept = 0, color = "darkgray", linewidth = 1, linetype = 4) +
+      geom_hline(
+        yintercept = 0,
+        color = "darkgray",
+        linewidth = 1,
+        linetype = 4
+      ) +
       geom_point() +
       geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 1 / 3) +
       scale_x_continuous(breaks = 1:9) +

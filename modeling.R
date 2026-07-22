@@ -28,17 +28,25 @@ qs_readm("./data/processed_data.qs")
 
 models <- list()
 
+# All BrAC in subsequent LOCs is in 0.01 g/dL units
+
 models[["bac_kss"]] <- non_aug %>%
   group_by(DaqName) %>%
   slice(1) %>%
   ungroup() %>%
   filter(Drive != 1) %>%
   select(Start_BAC, KSS_Score) %>%
+  mutate(Start_BAC = Start_BAC * 100) %>%
   lm(formula = KSS_Score ~ Start_BAC)
 
 for (frame_length in as.character(c(180, 300, 600))) {
   for (var in c("task_matrix", "wideform_task_matrix")) {
-    assign(var, get(glue("{var}_{frame_length}")))
+    assign(
+      var,
+      glue("{var}_{frame_length}") %>%
+        get() %>%
+        mutate(BAC = BAC * 100)
+    )
   }
   rm(var)
 
