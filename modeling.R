@@ -267,6 +267,24 @@ for (frame_length in as.character(c(180, 300, 600))) {
     ziformula = ~1,
     family = beta_family()
   )
+  models[["per_close_80"]][[frame_length]] <- glmmTMB(
+    # A single observation of Per_Close_80 = 1,
+    # not likely to be seen frequently in population data
+    data = filter(task_matrix, Per_Close_80 != 1),
+    formula = (
+      Per_Close_80 ~
+        KSS_cent +
+        BAC +
+        Phase +
+        BAC * KSS_cent +
+        BAC * Phase +
+        Road_Surface +
+        as.numeric(Drive) +
+        (1 | Subject) + (1 | Frame_Index)
+    ),
+    ziformula = ~1,
+    family = beta_family()
+  )
 
   # Brake force model
   models[["brake_force"]][[frame_length]] <- lmer(

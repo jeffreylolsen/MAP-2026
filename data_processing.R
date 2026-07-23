@@ -16,7 +16,7 @@ setwd(this.dir())
 non_aug <- read_feather("./data/non_aug_data.feather")
 
 # Replace repeated button-press observations with zeros
-non_aug <- non_aug %>%
+non_aug %<>%
   group_by(rleid(Task_Available)) %>%
   mutate(
     # Correct button press is first frame pressed within task window
@@ -41,7 +41,7 @@ non_aug$`rleid(Task_Available)` <- NULL
 non_aug[non_aug == 99] <- NA
 
 # Use 1-base indexing for X and Frame_Num (match row number)
-non_aug <- non_aug %>%
+non_aug %<>%
   mutate(X = 1:nrow(non_aug), .before = 1) %>%
   group_by(DaqName) %>%
   mutate(Frame_Num = row_number(), .after = X) %>%
@@ -52,7 +52,7 @@ non_aug$Avg_Pupil_Diameter <- (non_aug$RPupil_Diameter +
   non_aug$LPupil_Diameter) / 2
 
 # Rolling SD of vehicle lateral deviation
-# non_aug <- non_aug %>%
+# non_aug %<>%
 #  group_by(DaqName) %>%
 #  mutate(Vehicle_Lat_Dev_rolling_sd3 = runner(
 #    Vehicle_Lat_Dev, sd,
@@ -90,9 +90,22 @@ output <- output %>% left_join(
 
 ### Add and modify predictors
 
-non_aug <- non_aug %>% mutate(
-  Blinking = Left_Eyelid_Closed & Right_Eyelid_Closed
-)
+# Fully blinking
+non_aug %<>% mutate(Blinking = Left_Eyelid_Closed & Right_Eyelid_Closed)
+
+# Eyes 80% or more closed
+non_aug %<>%
+  group_by(Subject) %>%
+  mutate(
+    Eyes_Closed_80pct = (
+      Eye_Opening <
+        0.2 * max(
+          Eye_Opening,
+          na.rm = TRUE
+        )
+    )
+  )
+
 
 # Get saccades, fixations, and blinks
 non_saccades <- detect.fixations(
@@ -128,14 +141,14 @@ non_aug[is.na(non_aug$Eye_Event), "Eye_Event"] <- "saccade"
 rm(non_saccades, indices, flattened_indices)
 
 # First frame of task availability
-non_aug <- non_aug %>%
+non_aug %<>%
   group_by(consecutive_id(Task_Available)) %>%
   mutate(Task_Start_X = first(X)) %>%
   ungroup()
 non_aug$`consecutive_id(Task_Available)` <- NULL
 
 # Filter to rural straight, gravel, and dark segments
-non_aug <- non_aug %>% filter(EventName %in% c(
+non_aug %<>% filter(EventName %in% c(
   "RuralStraight",
   "Gravel",
   "Dark"
@@ -170,6 +183,7 @@ metrics <- c(
   "Speed_SD",
   "Braking_Events",
   "Per_Close",
+  "Per_Close_80",
   "Brake_Force_mean"
 )
 
@@ -257,6 +271,7 @@ for (frame_length in c(180, 300, 600)) {
       Blink_Count = max(Blink_Counter) - min(Blink_Counter),
       # Per close is the proportion that **both eyes are closed simultaneously**
       Per_Close = mean(Blinking, na.rm = TRUE),
+      Per_Close_80 = mean(Eyes_Closed_80pct, na.rm = TRUE),
       # Initial lateral deviation affects SDLP since they expect to correct
       Lat_Dev_abs_init = Vehicle_Lat_Dev[1],
       Lat_Dev_SD = sd(Vehicle_Lat_Dev, na.rm = TRUE),

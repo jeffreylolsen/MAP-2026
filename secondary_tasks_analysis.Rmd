@@ -656,8 +656,23 @@ lapply(
     ) + scale_x_continuous(labels = function(x) x / 100)
   }
 )
+lapply(
+  models[["per_close_80"]],
+  function(model) {
+    plot_model(
+      model,
+      type = "pred",
+      terms = c("BAC", "Phase"),
+      ci.lvl = 0.95,
+      axis.title = c("BrAC", "Phase"),
+      legend.title = "Segment type",
+      title = "Interaction plot: Per Close (PM80) vs Phase"
+    ) + scale_x_continuous(labels = function(x) x / 100)
+  }
+)
 
 lapply(models[["per_close"]], summary)
+lapply(models[["per_close_80"]], summary)
 ```
 
 ## Brake force analysis
@@ -692,6 +707,14 @@ generate_table( # Not used in paper
 generate_table(
   renamed_models("per_close"),
   "Per Close beta model",
+  shape = component + term ~ model,
+  align = "llrrr",
+  exponentiate = TRUE,
+  additional_note = "Estimates are reported as odds ratios (OR)."
+)
+generate_table(
+  renamed_models("per_close_80"),
+  "Per Close (PM80) beta model",
   shape = component + term ~ model,
   align = "llrrr",
   exponentiate = TRUE,
@@ -741,6 +764,7 @@ CreateTableOne(
       "Proportion of time out of lane" = Deviation_Frames_prop,
       "Blink count" = Blink_Count,
       "Proportion of time with eyes closed" = Per_Close,
+      "Proportion of time with eyes closed 80%" = Per_Close_80,
       "Lateral deviation at start of segment" = Lat_Dev_abs_init,
       "SDLP" = Lat_Dev_SD,
       "Standard deviation of speed" = Speed_SD,
