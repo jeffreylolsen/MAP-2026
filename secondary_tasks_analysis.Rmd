@@ -852,7 +852,7 @@ enframe(
 
 
 # BrAC slope by KSS score
-sdlp_kss_bac_coef_plot <- map_dfr(
+sdlp_kss_bac_coef_plot <- lapply(
   c(180, 300, 600),
   function(x) {
     emtrends(
@@ -875,6 +875,7 @@ sdlp_kss_bac_coef_plot <- map_dfr(
       )
   }
 ) %>%
+  bind_rows() %>%
   # Make sure order is correct in legend
   mutate(`Segment length` = factor(
     `Segment length`,
