@@ -74,7 +74,7 @@ if (!file.exists("./data/final_data.qs") |
   file.mtime("./data/final_data.qs") <
     file.mtime("./modeling.R")) {
   cat("\nGenerating models, script updated since last run.\n", file = stderr())
-  local(source("./modeling.R", local = TRUE))
+  source("./modeling.R")
 }
 qs_readm("./data/final_data.qs")
 ```
@@ -343,7 +343,7 @@ metrics <- list(
 for (metric in metrics) {
   print(plot_metric_around_task(metric$variable, metric$ymin, metric$ymax, 1))
 }
-rm(metric, metrics, obs_around_press)
+rm(metric, metrics, obs_around_press, plot_metric_around_task)
 ```
 
 Interpretability relies on the assumption that trends in eye metrics
@@ -643,6 +643,24 @@ task_matrix_180 %>%
       theme_minimal()
   }
 
+# Coefficients plot
+imap_dfr(models[["per_close"]], function(m, frames) {
+  tidy(m,
+    effects = "fixed", component = "cond",
+    conf.int = TRUE, exponentiate = TRUE
+  ) %>%
+    mutate(Window = glue("{as.numeric(frames) / 60}s"))
+}) %>%
+  filter(term != "(Intercept)") %>%
+  ggplot(aes(x = estimate, y = term, color = Window)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "darkgray") +
+  geom_pointrange(
+    aes(xmin = conf.low, xmax = conf.high),
+    position = position_dodge(width = 0.5)
+  ) +
+  scale_x_log10() +
+  labs(x = "Odds ratio (95% CI, log scale)", y = NULL)
+
 lapply(
   models[["per_close"]],
   function(model) {
@@ -738,6 +756,7 @@ generate_table(
     "are reported as odds ratios (OR)."
   )
 )
+rm(renamed_models)
 
 CreateTableOne(
   data = task_matrix_300 %>%
@@ -1083,22 +1102,3 @@ rsvg_pdf("./output/speed_with_zoom.svg", "./output/speed_with_zoom.pdf")
 print(combined_plots)
 rm(wide_plot, zoom_plot, combined_plots)
 ```
-
-```{r}
-or_data <- imap_dfr(models[["per_close"]], function(m, frames) {
-  tidy(m, effects = "fixed", component = "cond",
-       conf.int = TRUE, exponentiate = TRUE) %>%
-    mutate(Window = glue("{as.numeric(frames) / 60}s"))
-}) %>%
-  filter(term != "(Intercept)")
-
-ggplot(or_data, aes(x = estimate, y = term, color = Window)) +
-  geom_vline(xintercept = 1, linetype = "dashed", color = "darkgray") +
-  geom_pointrange(
-    aes(xmin = conf.low, xmax = conf.high),
-    position = position_dodge(width = 0.5)
-  ) +
-  scale_x_log10() +
-  labs(x = "Odds ratio (95% CI, log scale)", y = NULL)
-```
-

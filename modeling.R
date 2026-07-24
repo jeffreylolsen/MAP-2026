@@ -303,8 +303,7 @@ for (frame_length in as.character(c(180, 300, 600))) {
     control = lmer_ctrl()
   )
 }
-rm(frame_length, task_matrix, wideform_task_matrix, lmer_ctrl, glmer_ctrl)
+rm(frame_length, task_matrix, wideform_task_matrix)
 
 # Write environment
-modeling_path <- this.path()
 qs_save(as.list(environment()), "./data/final_data.qs")

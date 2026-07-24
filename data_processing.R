@@ -346,5 +346,4 @@ rm(
 )
 
 # Write environment
-processing_path <- this.path()
 qs_save(as.list(environment()), "./data/processed_data.qs")
