@@ -744,6 +744,11 @@ generate_table( # Not used in paper
   "Lane departure logit model"
 )
 generate_table(
+  list("Reaction Time" = models[["reaction_time"]]),
+  "Reaction time linear model",
+  align = "lr"
+)
+generate_table(
   renamed_models("per_close"),
   "Per Close beta model",
   shape = component + term ~ model,
