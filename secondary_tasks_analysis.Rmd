@@ -878,13 +878,12 @@ sdlp_kss_bac_coef_plot <- lapply(
     emtrends(
       object = models[["lat_dev_phase"]][[as.character(x)]],
       data = get(glue("task_matrix_{x}")),
-      specs = pairwise ~ Phase | KSS_cent,
+      specs = ~KSS_cent,
       var = "BAC",
       at = list(KSS_cent = -4:4),
       component = "cond"
     ) %>%
       as.data.frame() %>%
-      mutate(KSS_cent = as.numeric(KSS_cent)) %>%
       # Convert SDLP to centimeters, BAC is already 0.01 g/dL
       mutate(
         # Just transforming KSS_cent back into raw KSS
@@ -902,62 +901,27 @@ sdlp_kss_bac_coef_plot <- lapply(
     `Segment length`,
     levels = c("3s", "5s", "10s")
   )) %>%
-  {
-    main_plot <- ggplot(
-      data = filter(., Phase == "Control"),
-      aes(x = KSS, y = BAC.trend, color = `Segment length`)
-    ) +
-      geom_point(position = position_dodge(width = 1 / 2)) +
-      geom_errorbar(
-        aes(ymin = lower.CL, ymax = upper.CL),
-        width = 1 / 2,
-        position = position_dodge(width = 1 / 2)
-      ) +
-      scale_x_continuous(breaks = 1:9) +
-      scale_y_continuous(breaks = function(y) floor(min(y)):ceiling(max(y))) +
-      labs(
-        x = "KSS score",
-        y = "Marginal effect of BrAC on SDLP (cm per 0.01 g/dL, 95% CI)",
-        color = "Segment\nlength"
-      )
-
-    sec_plot <- ggplot(
-      data = filter(., KSS %in% c(2, 5, 8), Phase != "."),
-      aes(
-        x = KSS,
-        y = BAC.trend,
-        color = `Segment length`,
-        fill = `Segment length`,
-        group = interaction(`Segment length`, KSS)
-      )
-    ) +
-      geom_point(
-        position = position_dodge(width = 1),
-        aes(shape = Phase),
-      ) +
-      scale_shape_manual(values = c("Control" = 16, "Task" = 25)) +
-      geom_line(position = position_dodge(width = 1)) +
-      scale_x_continuous(breaks = c(2, 5, 8), expand = expansion(mult = 0.1)) +
-      scale_y_continuous(breaks = function(y) floor(min(y)):ceiling(max(y))) +
-      guides(shape = guide_legend(override.aes = list(fill = "black"))) +
-      labs(
-        x = "KSS score",
-        y = "Marginal effect differences between segment types",
-        color = "Segment\nlength"
-      )
-    main_plot + sec_plot + plot_layout(widths = c(3, 1), guides = "collect") &
-      geom_hline(
-        yintercept = 0,
-        color = "darkgray",
-        linewidth = 1,
-        linetype = 2
-      ) &
-      theme(legend.title = element_text(hjust = 1 / 2)) &
-      coord_cartesian(
-        ylim = c(-1.5, 3)
-      ) &
-      guides(fill = "none")
-  }
+  ggplot(aes(x = KSS, y = BAC.trend, color = `Segment length`)) +
+  geom_hline(
+    yintercept = 0,
+    color = "darkgray",
+    linewidth = 1,
+    linetype = 2
+  ) +
+  geom_point(position = position_dodge(width = 1 / 3)) +
+  geom_errorbar(
+    aes(ymin = lower.CL, ymax = upper.CL),
+    width = 1 / 3,
+    position = position_dodge(width = 1 / 3)
+  ) +
+  scale_x_continuous(breaks = 1:9) +
+  scale_y_continuous(breaks = function(y) floor(min(y)):ceiling(max(y))) +
+  labs(
+    x = "KSS score",
+    y = "Effect of BrAC on SDLP (cm per 0.01 g/dL, 95% CI)",
+    color = "Segment\nlength"
+  ) +
+  theme(legend.title = element_text(hjust = 1 / 2))
 
 ggsave("./output/sdlp_kss_bac_coef_plot.svg", sdlp_kss_bac_coef_plot)
 rsvg_pdf(
