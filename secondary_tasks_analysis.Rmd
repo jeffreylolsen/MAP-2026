@@ -822,10 +822,13 @@ CreateTableOne(
     )
 ) %>%
   print(showAllLevels = TRUE, printToggle = FALSE) %>%
+  # Fix space padding in parentheses
+  apply(c(1, 2), function(x) str_replace_all(x, "\\(\\s+", "(")) %>%
   kable(
     format = "latex",
     booktabs = TRUE,
     align = "lr",
+    linesep = "",
     caption = "Control/task 5s segment summary statistics",
     label = "summary_stats_table_ext"
   ) %>%
@@ -1120,7 +1123,7 @@ per_close_or_plot <- imap_dfr(models[["per_close"]], function(m, frames) {
         "BrAC × Phase (Task)"
       ))
     ),
-    window = factor('Segment Length', levels = c("3s", "5s", "10s"))
+    window = factor("Segment Length", levels = c("3s", "5s", "10s"))
   ) %>%
   ggplot(aes(x = estimate, y = term, color = Window)) +
   geom_vline(xintercept = 1, linetype = "dashed", color = "darkgray") +
@@ -1142,5 +1145,4 @@ rsvg_pdf(
   "./output/per_close_or_plot.pdf"
 )
 print(per_close_or_plot)
-
 ```
