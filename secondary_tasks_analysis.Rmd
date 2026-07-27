@@ -746,7 +746,8 @@ generate_table( # Not used in paper
 generate_table(
   list("Reaction Time" = models[["reaction_time"]]),
   "Reaction time linear model",
-  align = "lr"
+  align = "lr",
+  additional_note = "Reaction time is reported in ms."
 )
 generate_table(
   renamed_models("per_close"),
