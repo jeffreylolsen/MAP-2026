@@ -1083,4 +1083,61 @@ ggsave("./output/speed_with_zoom.svg", combined_plots,
 rsvg_pdf("./output/speed_with_zoom.svg", "./output/speed_with_zoom.pdf")
 print(combined_plots)
 rm(wide_plot, zoom_plot, combined_plots)
+
+# Per_Close odds ratio forest plot
+per_close_or_plot <- imap_dfr(models[["per_close"]], function(m, frames) {
+  broom.mixed::tidy(
+    m,
+    effects = "fixed",
+    component = "cond",
+    conf.int = TRUE,
+    exponentiate = TRUE
+  ) %>%
+    mutate(Window = glue("{as.numeric(frames) / 60}s"))
+}) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    term = recode(
+      term,
+      "BAC" = "BrAC",
+      "KSS_cent" = "KSS (median-centered)",
+      "PhaseTask" = "Phase (Task)",
+      "Road_SurfacePaved" = "Road surface (Paved)",
+      "as.numeric(Drive)" = "Drive #",
+      "KSS_cent:BAC" = "KSS (median-centered) × BrAC",
+      "BAC:PhaseTask" = "BrAC × Phase (Task)"
+    ),
+    term = factor(
+      term,
+      levels = rev(c(
+        "KSS (median-centered)",
+        "BrAC",
+        "Phase (Task)",
+        "Road surface (Paved)",
+        "Drive #",
+        "KSS (median-centered) × BrAC",
+        "BrAC × Phase (Task)"
+      ))
+    ),
+    window = factor('Segment Length', levels = c("3s", "5s", "10s"))
+  ) %>%
+  ggplot(aes(x = estimate, y = term, color = Window)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "darkgray") +
+  geom_pointrange(
+    aes(xmin = conf.low, xmax = conf.high),
+    position = position_dodge(width = 0.6),
+    size = 0.4
+  ) +
+  scale_x_log10() +
+  labs(
+    x = "Odds ratio (95% CI, log scale)",
+    y = NULL,
+    color = "Window",
+    title = "Per Close beta model: fixed effects by segment length"
+  ) +
+  theme_bw()
+
+ggsave("./output/per_close_or_plot.svg", per_close_or_plot, width = 8, height = 5)
+print(per_close_or_plot)
+
 ```
