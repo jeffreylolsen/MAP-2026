@@ -48,6 +48,26 @@ library(ggplotify)
 library(broom.mixed)
 
 dir.create("./output", showWarnings = FALSE)
+
+# ggplot options
+theme_set(theme_bw())
+palette.colors(palette = "Okabe-Ito") %>%
+  c(
+    "Control" = .[3],
+    "180" = .[3],
+    "3s" = .[3],
+    "Task" = .[2],
+    "300" = .[2],
+    "5s" = .[2],
+    "600" = .[4],
+    "10s" = .[4]
+  ) %>%
+  {
+    options(
+      ggplot2.discrete.colour = .,
+      ggplot2.discrete.fill = .
+    )
+  }
 ```
 
 <div style="text-align: center;">
@@ -969,18 +989,13 @@ wide_plot <- non_aug %>%
         ),
         alpha = 0.4
       ) +
-      scale_fill_manual(
-        name = "Segment",
-        values = c(
-          "Control" = "blue",
-          "Task" = "red"
-        )
-      ) +
       labs(
         # title = "Vehicle speed time series, highlighting tasks",
         x = "Minute of drive",
-        y = "Vehicle speed"
+        y = "Vehicle speed",
+        fill = "Segment"
       ) +
+      guides(fill = guide_legend(override.aes = list(alpha = 1))) +
       scale_x_break(c(6, 9))
   } %>%
   {
@@ -1042,9 +1057,6 @@ zoom_plot <- non_aug %>%
       ) +
       geom_line() +
       coord_cartesian(ylim = c(60, 65), expand = FALSE) +
-      scale_fill_manual(
-        values = c("Control" = "blue", "Task" = "red")
-      ) +
       scale_linetype_manual(
         values = c("180" = "solid", "300" = "dashed", "600" = "dotted")
       ) +
@@ -1052,7 +1064,8 @@ zoom_plot <- non_aug %>%
         title = "Task 4",
         x = "Minute of drive",
         y = "Vehicle speed"
-      )
+      ) +
+      guides(fill = guide_legend(override.aes = list(alpha = 1)))
   }
 
 combined_plots <- as.ggplot(wide_plot + theme(legend.position = "none")) /
