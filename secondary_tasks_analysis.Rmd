@@ -1133,12 +1133,14 @@ per_close_or_plot <- imap_dfr(models[["per_close"]], function(m, frames) {
   labs(
     x = "Odds ratio (95% CI, log scale)",
     y = NULL,
-    color = "Window",
-    title = "Per Close beta model: fixed effects by segment length"
-  ) +
-  theme_bw()
+    color = "Window"
+  )
 
 ggsave("./output/per_close_or_plot.svg", per_close_or_plot, width = 8, height = 5)
+rsvg_pdf(
+  "./output/per_close_or_plot.svg",
+  "./output/per_close_or_plot.pdf"
+)
 print(per_close_or_plot)
 
 ```
