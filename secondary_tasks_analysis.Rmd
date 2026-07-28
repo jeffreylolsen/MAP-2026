@@ -1040,11 +1040,14 @@ zoom_plot <- non_aug %>%
 
     bounds_600 <- filter(all_rects, Window == "600")
     pad <- 0.25
-    plot_data <- dd %>%
+    dd %>%
       filter(
         Minute >= min(bounds_600$xmin) - pad,
         Minute <= max(bounds_600$xmax) + pad
-      )
+      ) %>%
+      assign("plot_data", ., envir = parent.frame(2)) %>%
+      filter(Correct_Left_Button_Press == 1) %>%
+      assign("button_press", ., envir = parent.frame(2))
 
     ggplot(plot_data, aes(x = Minute, y = Vehicle_Speed)) +
       geom_rect(
@@ -1059,13 +1062,28 @@ zoom_plot <- non_aug %>%
         linewidth = 0.6
       ) +
       geom_line() +
+      geom_vline(
+        data = button_press,
+        aes(xintercept = Minute, color = "Task completion"),
+        linewidth = 1 / 2,
+        linetype = 1
+      ) +
+      scale_color_manual(
+        name = "Event",
+        values = c("Task completion" = palette.colors(palette = "Okabe-Ito")[4])
+      ) +
       coord_cartesian(ylim = c(60, 65), expand = FALSE) +
       scale_linetype_manual(
         values = c("180" = "solid", "300" = "dashed", "600" = "dotted")
       ) +
+      scale_x_continuous(
+        breaks = bounds_600$xmin[bounds_600$Segment == "Task"] +
+          (seq(-24, 24, 3) / 60),
+        labels = seq(-24, 24, 3)
+      ) +
       labs(
         title = "Task 4",
-        x = "Minute of drive",
+        x = "Seconds after task onset",
         y = "Vehicle speed"
       ) +
       guides(fill = guide_legend(override.aes = list(alpha = 1)))
