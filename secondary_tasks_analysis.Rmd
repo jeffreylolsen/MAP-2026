@@ -1080,18 +1080,25 @@ zoom_plot <- non_aug %>%
         ),
         color = "black",
         alpha = 0.1,
-        linewidth = 0.6
+        linewidth = 3/4
       ) +
       geom_line() +
       geom_vline(
         data = button_press,
-        aes(xintercept = Minute, color = "Task completion"),
-        linewidth = 1 / 2,
+        aes(
+          xintercept = Minute),
+          color = palette.colors(palette = "Okabe-Ito")[4],
+        linewidth = 3/4,
         linetype = 1
       ) +
-      scale_color_manual(
-        name = "Event",
-        values = c("Task completion" = palette.colors(palette = "Okabe-Ito")[4])
+      geom_text(
+        data = button_press,
+        aes(x = Minute, y = 63.5, label = "Task completion"),
+        color = palette.colors(palette = "Okabe-Ito")[4],
+        angle = 90,
+        vjust = 1.5,
+        size = 3.5,
+        fontface = "italic"
       ) +
       coord_cartesian(ylim = c(60, 65), expand = FALSE) +
       scale_linetype_manual(
