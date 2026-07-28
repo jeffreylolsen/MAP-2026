@@ -166,6 +166,58 @@ generate_table <- function(
     ) %>%
     write_lines(glue("./output/{str_replace_all(title, ' ', '_')}.tex"))
 }
+
+gen_interact_plot_kss_bac <- function(xlab, ylab, model_name, ystretch = 1) {
+  lapply(
+    c(180, 300, 600),
+    function(x) {
+      emtrends(
+        object = models[[model_name]][[as.character(x)]],
+        data = get(glue("task_matrix_{x}")),
+        specs = ~KSS_cent,
+        var = "BAC",
+        at = list(KSS_cent = -4:4),
+        component = "cond"
+      ) %>%
+        as.data.frame() %>%
+        rename(any_of(c(lower.CL = "asymp.LCL", upper.CL = "asymp.UCL"))) %>%
+        mutate(
+          # Just transforming KSS_cent back into raw KSS
+          KSS = KSS_cent + abs(min(KSS_cent)) + 1,
+          # Shifting estimates to other units
+          across(c(BAC.trend, lower.CL, upper.CL), ~ .x * ystretch),
+          # Segment length for coloring
+          `Segment length` = glue("{x / 60}s")
+        )
+    }
+  ) %>%
+    bind_rows() %>%
+    # Make sure order is correct in legend
+    mutate(`Segment length` = factor(
+      `Segment length`,
+      levels = c("3s", "5s", "10s")
+    )) %>%
+    ggplot(aes(x = KSS, y = BAC.trend, color = `Segment length`)) +
+    geom_hline(
+      yintercept = 0,
+      color = "darkgray",
+      linewidth = 1,
+      linetype = 2
+    ) +
+    geom_point(position = position_dodge(width = 1 / 3)) +
+    geom_errorbar(
+      aes(ymin = lower.CL, ymax = upper.CL),
+      width = 1 / 3,
+      position = position_dodge(width = 1 / 3)
+    ) +
+    scale_x_continuous(breaks = 1:9) +
+    labs(
+      x = xlab,
+      y = ylab,
+      color = "Segment\nlength"
+    ) +
+    theme(legend.title = element_text(hjust = 1 / 2))
+}
 ```
 
 ## Preliminary models
@@ -895,63 +947,32 @@ enframe(
 
 
 # BrAC slope by KSS score
-sdlp_kss_bac_coef_plot <- lapply(
-  c(180, 300, 600),
-  function(x) {
-    emtrends(
-      object = models[["lat_dev_phase"]][[as.character(x)]],
-      data = get(glue("task_matrix_{x}")),
-      specs = ~KSS_cent,
-      var = "BAC",
-      at = list(KSS_cent = -4:4),
-      component = "cond"
-    ) %>%
-      as.data.frame() %>%
-      # Convert SDLP to centimeters, BAC is already 0.01 g/dL
-      mutate(
-        # Just transforming KSS_cent back into raw KSS
-        KSS = KSS_cent + abs(min(KSS_cent)) + 1,
-        # Shifting estimates of SDLP up into centimeters
-        across(c(BAC.trend, lower.CL, upper.CL), ~ .x * 30.48),
-        # Segment length for coloring
-        `Segment length` = glue("{x / 60}s")
-      )
-  }
-) %>%
-  bind_rows() %>%
-  # Make sure order is correct in legend
-  mutate(`Segment length` = factor(
-    `Segment length`,
-    levels = c("3s", "5s", "10s")
-  )) %>%
-  ggplot(aes(x = KSS, y = BAC.trend, color = `Segment length`)) +
-  geom_hline(
-    yintercept = 0,
-    color = "darkgray",
-    linewidth = 1,
-    linetype = 2
-  ) +
-  geom_point(position = position_dodge(width = 1 / 3)) +
-  geom_errorbar(
-    aes(ymin = lower.CL, ymax = upper.CL),
-    width = 1 / 3,
-    position = position_dodge(width = 1 / 3)
-  ) +
-  scale_x_continuous(breaks = 1:9) +
-  scale_y_continuous(breaks = function(y) floor(min(y)):ceiling(max(y))) +
-  labs(
-    x = "KSS score",
-    y = "Effect of BrAC on SDLP (cm per 0.01 g/dL, 95% CI)",
-    color = "Segment\nlength"
-  ) +
-  theme(legend.title = element_text(hjust = 1 / 2))
-
+sdlp_kss_bac_coef_plot <- gen_interact_plot_kss_bac(
+  "KSS score",
+  "Effect of BrAC on SDLP (cm per 0.01 g/dL, 95% CI)",
+  "lat_dev_phase",
+  30.48
+)
 ggsave("./output/sdlp_kss_bac_coef_plot.svg", sdlp_kss_bac_coef_plot)
 rsvg_pdf(
   "./output/sdlp_kss_bac_coef_plot.svg",
   "./output/sdlp_kss_bac_coef_plot.pdf"
 )
 print(sdlp_kss_bac_coef_plot)
+
+perclos_kss_bac_coef_plot <- gen_interact_plot_kss_bac(
+  "KSS score",
+  "Effect of BrAC on PERCLOS (% change per 0.01 g/dL, 95% CI)",
+  "per_close",
+  ystretch = 100
+)
+ggsave("./output/perclos_kss_bac_coef_plot.svg", perclos_kss_bac_coef_plot)
+rsvg_pdf(
+  "./output/perclos_kss_bac_coef_plot.svg",
+  "./output/perclos_kss_bac_coef_plot.pdf"
+)
+print(perclos_kss_bac_coef_plot)
+
 
 # Time-series plot with tasks shaded
 wide_plot <- non_aug %>%
