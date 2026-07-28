@@ -46,6 +46,7 @@ library(rsvg)
 library(patchwork)
 library(ggplotify)
 library(broom.mixed)
+library(kableExtra)
 
 dir.create("./output", showWarnings = FALSE)
 
@@ -836,8 +837,14 @@ generate_table(
 )
 rm(renamed_models)
 
-task_matrix_300 %>%
-  mutate("Reaction time (ms)" = Reaction_Frames * (1000 / 60)) %>%
+bind_rows(
+  mutate(task_matrix_180, Segment_Length = factor("3s", levels = c("3s", "5s", "10s"))),
+  mutate(task_matrix_300, Segment_Length = factor("5s", levels = c("3s", "5s", "10s"))),
+  mutate(task_matrix_600, Segment_Length = factor("10s", levels = c("3s", "5s", "10s")))
+) %>%
+  mutate(
+    Phase = factor(Phase, levels = c("Control", "Task"))
+  ) %>%
   select(
     c(
       Avg_Pupil_Diameter_mean,
@@ -846,37 +853,58 @@ task_matrix_300 %>%
       Brake_Force_mean,
       Saccade_Count,
       Per_Close,
-      BAC,
-      KSS,
-      Road_Surface,
-      Phase
+      Phase,
+      Segment_Length
     )
   ) %>%
   rename(
-    "Mean pupil diameter [mm]" = Avg_Pupil_Diameter_mean,
+    "Mean pupil diameter (mm)" = Avg_Pupil_Diameter_mean,
     "PERCLOS" = Per_Close,
-    "SDLP [ft]" = Lat_Dev_SD,
-    "Speed SD [mph]" = Speed_SD,
+    "SDLP (ft)" = Lat_Dev_SD,
+    "Speed SD (mph)" = Speed_SD,
     "Mean brake force" = Brake_Force_mean,
-    "Saccade count" = Saccade_Count,
-    "Road surface" = Road_Surface
+    "Saccade count" = Saccade_Count
   ) %>%
   CreateTableOne(
-    strata = "Phase",
-    vars = setdiff(names(.), "Phase"),
+    strata = c("Phase", "Segment_Length"),
+    vars = setdiff(names(.), c("Phase", "Segment_Length")),
     data = .
   ) %>%
-  print(showAllLevels = TRUE, printToggle = FALSE, test = FALSE) %>%
+  print(
+    showAllLevels = FALSE,
+    printToggle = FALSE,
+    test = FALSE,
+    explain = FALSE
+  ) %>%
   .[-1, ] %>%
-  # Fix space padding in parentheses
-  apply(c(1, 2), function(x) str_replace_all(x, "\\(\\s+", "(")) %>%
+  apply(2, function(x) str_replace_all(x, "\\(\\s+", "(")) %>%
+  {
+    colnames(.) <- rep(c("Control", "Task"), 3)
+    .
+  } %>%
   kable(
     format = "latex",
     booktabs = TRUE,
-    align = "lr",
+    align = "lrrrrrr",
     linesep = "",
-    caption = "Control/task 5s segment summary statistics",
+    caption = "Control/task summary statistics by segment length",
     label = "summary_stats_table_ext"
+  ) %>%
+  add_header_above(c(" " = 1, "3s" = 2, "5s" = 2, "10s" = 2)) %>%
+  str_remove("\\\\toprule\n") %>%
+  str_replace_all(
+    c(
+      "\\\\begin\\{tabular\\}" = paste(
+        "\\\\resizebox{\\\\linewidth}{!}{",
+        "\\\\begin{tabular}"
+      ),
+      "\\\\end\\{tabular\\}" = "\\\\end{tabular}}",
+      "\\\\bottomrule" = paste(
+        "\\\\bottomrule\n\\\\multicolumn{7}{l}{\\\\footnotesize",
+        "Statistics reported are means with standard",
+        "deviations in parentheses.}"
+      )
+    )
   ) %>%
   write_lines("./output/summary_stats_table_ext.tex")
 
@@ -1080,15 +1108,16 @@ zoom_plot <- non_aug %>%
         ),
         color = "black",
         alpha = 0.1,
-        linewidth = 3/4
+        linewidth = 3 / 4
       ) +
       geom_line() +
       geom_vline(
         data = button_press,
         aes(
-          xintercept = Minute),
-          color = palette.colors(palette = "Okabe-Ito")[4],
-        linewidth = 3/4,
+          xintercept = Minute
+        ),
+        color = palette.colors(palette = "Okabe-Ito")[4],
+        linewidth = 3 / 4,
         linetype = 1
       ) +
       geom_text(
