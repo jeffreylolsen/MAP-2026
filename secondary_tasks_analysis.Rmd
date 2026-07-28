@@ -784,44 +784,38 @@ generate_table(
 )
 rm(renamed_models)
 
-CreateTableOne(
-  data = task_matrix_300 %>%
-    mutate("Reaction time (ms)" = Reaction_Frames * (1000 / 60)) %>%
-    select(
-      -c(
-        DaqName,
-        Subject,
-        BAC_cent,
-        KSS_cent,
-        Braking_Events,
-        Frame_Index,
-        Press_Frame,
-        Frame_Count,
-        Reaction_Frames
-      )
-    ) %>%
-    rename(
-      "Left pupil mean diameter" = LPupil_Diameter_mean,
-      "Right pupil mean diameter" = RPupil_Diameter_mean,
-      "Both pupils mean diameter" = Avg_Pupil_Diameter_mean,
-      "Mean gaze pitch" = Gaze_Pitch_mean,
-      "Mean gaze yaw" = Gaze_Yaw_mean,
-      "Lane departure occurred" = Lane_Departure,
-      "Proportion of time out of lane" = Deviation_Frames_prop,
-      "Blink count" = Blink_Count,
-      "Proportion of time with eyes closed" = Per_Close,
-      "Proportion of time with eyes closed 80%" = Per_Close_80,
-      "Lateral deviation at start of segment" = Lat_Dev_abs_init,
-      "SDLP" = Lat_Dev_SD,
-      "Standard deviation of speed" = Speed_SD,
-      "Mean speed" = Speed_mean,
-      "Mean brake force" = Brake_Force_mean,
-      "Saccade count" = Saccade_Count,
-      "Proportion of time in saccades" = Saccade_Prop,
-      "Road surface" = Road_Surface
+task_matrix_300 %>%
+  mutate("Reaction time (ms)" = Reaction_Frames * (1000 / 60)) %>%
+  select(
+    c(
+      Avg_Pupil_Diameter_mean,
+      Lat_Dev_SD,
+      Speed_SD,
+      Brake_Force_mean,
+      Saccade_Count,
+      Per_Close,
+      BAC,
+      KSS,
+      Road_Surface,
+      Phase
     )
-) %>%
-  print(showAllLevels = TRUE, printToggle = FALSE) %>%
+  ) %>%
+  rename(
+    "Mean pupil diameter [mm]" = Avg_Pupil_Diameter_mean,
+    "PERCLOS" = Per_Close,
+    "SDLP [ft]" = Lat_Dev_SD,
+    "Speed SD [mph]" = Speed_SD,
+    "Mean brake force" = Brake_Force_mean,
+    "Saccade count" = Saccade_Count,
+    "Road surface" = Road_Surface
+  ) %>%
+  CreateTableOne(
+    strata = "Phase",
+    vars = setdiff(names(.), "Phase"),
+    data = .
+  ) %>%
+  print(showAllLevels = TRUE, printToggle = FALSE, test = FALSE) %>%
+  .[-1, ] %>%
   # Fix space padding in parentheses
   apply(c(1, 2), function(x) str_replace_all(x, "\\(\\s+", "(")) %>%
   kable(
