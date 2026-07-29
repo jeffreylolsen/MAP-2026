@@ -789,6 +789,10 @@ renamed_models <- function(model) {
 }
 
 generate_table(
+  renamed_models("speed_sd"),
+  "SDS linear model"
+)
+generate_table(
   renamed_models("lat_dev_phase"),
   "SDLP linear model"
 )
@@ -861,7 +865,7 @@ bind_rows(
     "Mean pupil diameter (mm)" = Avg_Pupil_Diameter_mean,
     "PERCLOS" = Per_Close,
     "SDLP (ft)" = Lat_Dev_SD,
-    "Speed SD (mph)" = Speed_SD,
+    "SDS (mph)" = Speed_SD,
     "Mean brake force" = Brake_Force_mean,
     "Saccade count" = Saccade_Count
   ) %>%
@@ -1001,6 +1005,17 @@ rsvg_pdf(
 )
 print(perclos_kss_bac_coef_plot)
 
+sds_kss_bac_coef_plot <- gen_interact_plot_kss_bac(
+  "KSS score",
+  "Effect of BrAC on SDS (mph per 0.01 g/dL, 95% CI)",
+  "speed_sd"
+)
+ggsave("./output/sds_kss_bac_coef_plot.svg", sds_kss_bac_coef_plot)
+rsvg_pdf(
+  "./output/sds_kss_bac_coef_plot.svg",
+  "./output/sds_kss_bac_coef_plot.pdf"
+)
+print(sds_kss_bac_coef_plot)
 
 # Time-series plot with tasks shaded
 wide_plot <- non_aug %>%
