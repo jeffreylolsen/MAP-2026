@@ -1,4 +1,4 @@
-# Alcohol-impaired driving and divided attention task behavior
+# Changes in Driver Performance and Eye Behavior in Response to Alcohol, Divided Attention, and Self-Reported Fatigue
 
 ## Running
 
