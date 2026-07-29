@@ -106,6 +106,7 @@ qs_readm("./data/final_data.qs")
 generate_table <- function(
   model_list,
   title,
+  label,
   shape = term ~ model,
   align = "lrrr",
   additional_note = NULL,
@@ -114,7 +115,7 @@ generate_table <- function(
   modelsummary(
     model_list,
     ...,
-    title = title,
+    title = glue("{title}\\label{{{label}}}"),
     output = "latex",
     stars = TRUE,
     shape = shape,
@@ -790,25 +791,30 @@ renamed_models <- function(model) {
 
 generate_table(
   renamed_models("speed_sd"),
-  "SDS linear model"
+  "SDS linear model",
+  "tab:sds_table"
 )
 generate_table(
   renamed_models("lat_dev_phase"),
-  "SDLP linear model"
+  "SDLP linear model",
+  "tab:sdlp_table"
 )
 generate_table( # Not used in paper
   renamed_models("lane_departure"),
-  "Lane departure logit model"
+  "Lane departure logit model",
+  "tab:lane_dep_table"
 )
 generate_table(
   list("Reaction Time" = models[["reaction_time"]]),
   "Reaction time linear model",
+  "tab:rt_table",
   align = "lr",
   additional_note = "Reaction time is reported in ms."
 )
 generate_table(
   renamed_models("per_close"),
-  "Per Close beta model",
+  "PERCLOS beta model",
+  "tab:perclos_table",
   shape = component + term ~ model,
   align = "llrrr",
   exponentiate = TRUE,
@@ -816,7 +822,8 @@ generate_table(
 )
 generate_table(
   renamed_models("per_close_80"),
-  "Per Close (PM80) beta model",
+  "PERCLOS (PM80) beta model",
+  "tab:perclos80_table",
   shape = component + term ~ model,
   align = "llrrr",
   exponentiate = TRUE,
@@ -824,11 +831,13 @@ generate_table(
 )
 generate_table( # Not used in paper
   renamed_models("saccade_logit"),
-  "Saccade logit model"
+  "Saccade logit model",
+  "tab:saccade_logit_table"
 )
 generate_table(
   renamed_models("saccade_zip"),
   "Saccade ZIP model",
+  "tab:saccade_zip_table",
   shape = component + term ~ model,
   align = "llrrr",
   exponentiate = TRUE,
