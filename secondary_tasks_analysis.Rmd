@@ -109,7 +109,10 @@ generate_table <- function(
   label,
   shape = term ~ model,
   align = "lrrr",
+  statistic = c("conf.int", "p.value"),
   additional_note = NULL,
+  remove_rt_header = FALSE,
+  include_ci_note = TRUE,
   ...
 ) {
   modelsummary(
@@ -120,7 +123,7 @@ generate_table <- function(
     stars = TRUE,
     shape = shape,
     estimate = "{estimate}{stars}",
-    statistic = c("conf.int", "p.value"),
+    statistic = statistic,
     align = align,
     coef_rename = c(
       "(Intercept)" = "Intercept",
@@ -145,7 +148,11 @@ generate_table <- function(
       paste(
         c(
           "+ p < 0.1, * p < 0.05, ** p < 0.01, *** p < 0.001.\\\\",
-          "95\\% confidence intervals are in brackets.",
+          if (include_ci_note) {
+            "95\\% confidence intervals are in brackets."
+          } else {
+            NULL
+          },
           "BrAC is reported in units of 0.01 g/dL.",
           additional_note
         ),
@@ -156,16 +163,34 @@ generate_table <- function(
     as.character() %>%
     str_replace_all(
       c(
-        "\\\\begin\\{table\\}" = "\\\\begin{table}\n\\\\small",
+        "\\\\begin\\{table\\}" = "\\\\begin{table}[htbp]\n\\\\centering\n\\\\small\n\\\\begin{adjustbox}{max width=\\\\textwidth}",
+        "\\\\end\\{table\\}" = "\\\\end{adjustbox}\n\\\\end{table}",
         "component(?!s are reported)" = "Component",
         "conditional" = "Conditional",
         "zero_inflated" = "Zero-inflated",
         "dispersion" = "Dispersion",
         " 0\\." = " .",
         "-0\\." = "-.",
-        "<0\\." = "<."
+        "<0\\." = "<.",
+        "2.5 %" = "2.5 \\\\%",
+        "97.5 %" = "97.5 \\\\%"
       )
     ) %>%
+    {
+      if (remove_rt_header) {
+        str_replace_all(., c(
+          "hline[{]2[}]=[{].*?\\n" = "",
+          "hline[{]1[}]=[{].*?\\n" = "",
+          "hline[{]3[}]" = "hline{2}",
+          "hline[{]11[}]" = "hline{10}",
+          "cell[{]1[}][{].*?\\n" = "",
+          "cell[{]2-" = "cell{1-",
+          "& Reaction Time &  &  \\\\\\\\\\n" = ""
+        ))
+      } else {
+        .
+      }
+    } %>%
     write_lines(glue("./output/{str_replace_all(title, ' ', '_')}.tex"))
 }
 
@@ -819,8 +844,12 @@ generate_table(
   list("Reaction Time" = models[["reaction_time"]]),
   "Reaction time linear model",
   "tab:rt_table",
-  align = "lr",
-  additional_note = "Reaction time is reported in ms."
+  shape = term ~ statistic,
+  align = "lrrr",
+  statistic = c("95\\% CI" = "[{conf.low}, {conf.high}]", "p" = "{p.value}"),
+  additional_note = "Reaction time is reported in ms.",
+  remove_rt_header = TRUE,
+  include_ci_note = FALSE
 )
 generate_table(
   renamed_models("per_close"),
@@ -862,9 +891,18 @@ generate_table(
 rm(renamed_models)
 
 bind_rows(
-  mutate(task_matrix_180, Segment_Length = factor("3s", levels = c("3s", "5s", "10s"))),
-  mutate(task_matrix_300, Segment_Length = factor("5s", levels = c("3s", "5s", "10s"))),
-  mutate(task_matrix_600, Segment_Length = factor("10s", levels = c("3s", "5s", "10s")))
+  mutate(
+    task_matrix_180,
+    Segment_Length = factor("3s", levels = c("3s", "5s", "10s"))
+  ),
+  mutate(
+    task_matrix_300,
+    Segment_Length = factor("5s", levels = c("3s", "5s", "10s"))
+  ),
+  mutate(
+    task_matrix_600,
+    Segment_Length = factor("10s", levels = c("3s", "5s", "10s"))
+  )
 ) %>%
   mutate(
     Phase = factor(Phase, levels = c("Control", "Task"))
@@ -918,6 +956,7 @@ bind_rows(
   str_remove("\\\\toprule\n") %>%
   str_replace_all(
     c(
+      "\\\\begin\\{table\\}" = "\\\\begin{table}[htbp]",
       "\\\\begin\\{tabular\\}" = paste(
         "\\\\resizebox{\\\\linewidth}{!}{",
         "\\\\begin{tabular}"
@@ -988,6 +1027,8 @@ enframe(
     linesep = "",
     label = "table_one"
   ) %>%
+  as.character() %>%
+  str_replace_all("\\\\begin\\{table\\}", "\\\\begin{table}[htbp]") %>%
   write_lines("./output/table_one.tex")
 ```
 
@@ -1117,10 +1158,7 @@ wide_plot <- non_aug %>%
       guides(fill = guide_legend(override.aes = list(alpha = 1))) +
       scale_x_break(c(6, 9))
   } %>%
-  {
-    ggsave("./output/speed_time_series_highlighted.svg", .)
-    print(.)
-  }
+  print()
 
 zoom_plot <- non_aug %>%
   filter(DaqName == non_aug[[1, "DaqName"]]) %>%
@@ -1275,7 +1313,12 @@ per_close_or_plot <- imap_dfr(models[["per_close"]], function(m, frames) {
     color = "Window"
   )
 
-ggsave("./output/per_close_or_plot.svg", per_close_or_plot, width = 8, height = 5)
+ggsave(
+  "./output/per_close_or_plot.svg",
+  per_close_or_plot,
+  width = 8,
+  height = 5
+)
 rsvg_pdf(
   "./output/per_close_or_plot.svg",
   "./output/per_close_or_plot.pdf"
