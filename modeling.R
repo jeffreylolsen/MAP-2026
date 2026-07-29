@@ -302,7 +302,7 @@ for (frame_length in as.character(c(180, 300, 600))) {
     ),
     control = lmer_ctrl()
   )
-  
+
   # Pupil diameter model
   models[["pupil_diameter"]][[frame_length]] <- lmer(
     data = task_matrix,
