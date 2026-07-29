@@ -678,6 +678,12 @@ lapply(models[["speed_sd"]], summary)
 lapply(models[["speed_mean"]], summary)
 ```
 
+## Pupil diameter LMM
+
+```{r Pupil diameter LMM}
+lapply(models[["pupil_diameter"]], summary)
+```
+
 ## Reaction time LMM
 
 ```{r Reaction time LMM}
@@ -798,6 +804,11 @@ generate_table(
   renamed_models("lat_dev_phase"),
   "SDLP linear model",
   "tab:sdlp_table"
+)
+generate_table(
+  renamed_models("pupil_diameter"),
+  "Pupil diameter linear model",
+  "tab:pupil_table"
 )
 generate_table( # Not used in paper
   renamed_models("lane_departure"),
@@ -1025,6 +1036,18 @@ rsvg_pdf(
   "./output/sds_kss_bac_coef_plot.pdf"
 )
 print(sds_kss_bac_coef_plot)
+
+pupil_kss_bac_coef_plot <- gen_interact_plot_kss_bac(
+  "KSS score",
+  "Effect of BrAC on pupil diameter (mm per 0.01 g/dL, 95% CI)",
+  "pupil_diameter"
+)
+ggsave("./output/pupil_kss_bac_coef_plot.svg", pupil_kss_bac_coef_plot)
+rsvg_pdf(
+  "./output/pupil_kss_bac_coef_plot.svg",
+  "./output/pupil_kss_bac_coef_plot.pdf"
+)
+print(pupil_kss_bac_coef_plot)
 
 # Time-series plot with tasks shaded
 wide_plot <- non_aug %>%

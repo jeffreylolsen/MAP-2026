@@ -302,6 +302,21 @@ for (frame_length in as.character(c(180, 300, 600))) {
     ),
     control = lmer_ctrl()
   )
+  
+  # Pupil diameter model
+  models[["pupil_diameter"]][[frame_length]] <- lmer(
+    data = task_matrix,
+    formula = Avg_Pupil_Diameter_mean ~
+      KSS_cent +
+      BAC +
+      BAC * KSS_cent +
+      BAC * Phase +
+      Road_Surface +
+      as.numeric(Drive) +
+      Phase +
+      (1 | Subject) + (1 | Frame_Index),
+    control = lmer_ctrl()
+  )
 }
 rm(frame_length, task_matrix, wideform_task_matrix)
 
