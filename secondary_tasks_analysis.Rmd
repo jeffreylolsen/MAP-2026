@@ -1001,11 +1001,16 @@ enframe(
 # BrAC slope by KSS score
 sdlp_kss_bac_coef_plot <- gen_interact_plot_kss_bac(
   "KSS score",
-  "Effect of BrAC on SDLP (cm per 0.01 g/dL, 95% CI)",
+  "Effect of BrAC on SDLP\n(cm per 0.01 g/dL, 95% CI)",
   "lat_dev_phase",
   30.48
 )
-ggsave("./output/sdlp_kss_bac_coef_plot.svg", sdlp_kss_bac_coef_plot)
+ggsave(
+  "./output/sdlp_kss_bac_coef_plot.svg",
+  sdlp_kss_bac_coef_plot,
+  width = 7,
+  height = 4
+)
 rsvg_pdf(
   "./output/sdlp_kss_bac_coef_plot.svg",
   "./output/sdlp_kss_bac_coef_plot.pdf"
@@ -1014,11 +1019,16 @@ print(sdlp_kss_bac_coef_plot)
 
 perclos_kss_bac_coef_plot <- gen_interact_plot_kss_bac(
   "KSS score",
-  "Effect of BrAC on PERCLOS (% change per 0.01 g/dL, 95% CI)",
+  "Effect of BrAC on PERCLOS\n(% change per 0.01 g/dL, 95% CI)",
   "per_close",
   ystretch = 100
 )
-ggsave("./output/perclos_kss_bac_coef_plot.svg", perclos_kss_bac_coef_plot)
+ggsave(
+  "./output/perclos_kss_bac_coef_plot.svg",
+  perclos_kss_bac_coef_plot,
+  width = 7,
+  height = 4
+)
 rsvg_pdf(
   "./output/perclos_kss_bac_coef_plot.svg",
   "./output/perclos_kss_bac_coef_plot.pdf"
@@ -1027,10 +1037,15 @@ print(perclos_kss_bac_coef_plot)
 
 sds_kss_bac_coef_plot <- gen_interact_plot_kss_bac(
   "KSS score",
-  "Effect of BrAC on SDS (mph per 0.01 g/dL, 95% CI)",
+  "Effect of BrAC on SDS\n(mph per 0.01 g/dL, 95% CI)",
   "speed_sd"
 )
-ggsave("./output/sds_kss_bac_coef_plot.svg", sds_kss_bac_coef_plot)
+ggsave(
+  "./output/sds_kss_bac_coef_plot.svg",
+  sds_kss_bac_coef_plot,
+  width = 7,
+  height = 4
+)
 rsvg_pdf(
   "./output/sds_kss_bac_coef_plot.svg",
   "./output/sds_kss_bac_coef_plot.pdf"
@@ -1039,10 +1054,15 @@ print(sds_kss_bac_coef_plot)
 
 pupil_kss_bac_coef_plot <- gen_interact_plot_kss_bac(
   "KSS score",
-  "Effect of BrAC on pupil diameter (mm per 0.01 g/dL, 95% CI)",
+  "Effect of BrAC on pupil diameter\n(mm per 0.01 g/dL, 95% CI)",
   "pupil_diameter"
 )
-ggsave("./output/pupil_kss_bac_coef_plot.svg", pupil_kss_bac_coef_plot)
+ggsave(
+  "./output/pupil_kss_bac_coef_plot.svg",
+  pupil_kss_bac_coef_plot,
+  width = 7,
+  height = 4
+)
 rsvg_pdf(
   "./output/pupil_kss_bac_coef_plot.svg",
   "./output/pupil_kss_bac_coef_plot.pdf"
