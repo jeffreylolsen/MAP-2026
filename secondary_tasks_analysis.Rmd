@@ -149,7 +149,10 @@ generate_table <- function(
         c(
           "+ p < 0.1, * p < 0.05, ** p < 0.01, *** p < 0.001.\\\\",
           if (include_ci_note) {
-            "95\\% confidence intervals are in brackets."
+            paste(
+              "95\\% confidence intervals are in brackets.",
+              "Corresponding $p$-values are in parentheses."
+            )
           } else {
             NULL
           },
